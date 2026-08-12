@@ -161,7 +161,7 @@
 
 ```bash
 # Клонируй репозиторий
-git clone https://github.com/YOUR_USERNAME/devtools-toolbox.git
+git clone https://github.com/AlexGhost2022/devtools-toolbox.git
 cd devtools-toolbox
 
 # Установи зависимости
