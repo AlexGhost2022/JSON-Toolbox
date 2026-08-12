@@ -2,7 +2,7 @@
 
 
 ```markdown
-<div align="center">
+
 
 # 🧰 DevTools Toolbox
 
@@ -17,7 +17,7 @@
 
 [🚀 Live Demo](#) • [✨ Features](#-features) • [🔒 Security](#-security) • [📖 Docs](#-quick-start)
 
-</div>
+
 
 ---
 
@@ -66,7 +66,6 @@
   "tags": ["dev", "tools"]
 }
 ```
-</details>
 
 ---
 
@@ -227,7 +226,6 @@ npm run dev
 
 ---
 
-<div align="center">
 
 
 
@@ -235,7 +233,7 @@ npm run dev
 
 [⬆ Back to top](#-devtools-toolbox)
 
-</div>
+
 ```
 
 ---
@@ -255,4 +253,4 @@ npm run dev
 - [ ] 📦 History of transformations
 ```
 
-Готово! Теперь у тебя профессиональный README, который не стыдно показать 🚀
+
