@@ -231,26 +231,8 @@ npm run dev
 
 **Made with ❤️ by Санёк**
 
-[⬆ Back to top](#-devtools-toolbox)
-
-
-```
-
----
 
 
 
-```markdown
-## 🗺️ Roadmap
-
-- [x] JSON Formatter
-- [x] Key Formatter
-- [x] Base64 Encode/Decode
-- [x] URL Encoder/Decode
-- [ ] 🌙 Dark Mode
-- [ ] ⌨️ Keyboard Shortcuts
-- [ ] 🔧 JWT Decoder
-- [ ] 📦 History of transformations
-```
 
 
