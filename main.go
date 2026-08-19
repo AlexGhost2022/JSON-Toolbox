@@ -24,7 +24,6 @@ const htmlContent = `<!DOCTYPE html>
         h1 { color: #89b4fa; text-align: center; margin-bottom: 6px; font-size: 24px; }
         .subtitle { text-align: center; color: #6c7086; margin-bottom: 20px; font-size: 13px; }
 
-        /* === Main Tabs === */
         .main-tabs {
             display: flex;
             justify-content: center;
@@ -33,7 +32,7 @@ const htmlContent = `<!DOCTYPE html>
             flex-wrap: wrap;
         }
         .main-tab {
-            padding: 12px 24px;
+            padding: 12px 20px;
             background: #313244;
             color: #a6adc8;
             border: 1px solid #45475a;
@@ -50,7 +49,6 @@ const htmlContent = `<!DOCTYPE html>
         .tool-panel { display: none; }
         .tool-panel.active { display: block; }
 
-        /* === Workspace === */
         .workspace {
             max-width: 1500px;
             margin: 0 auto;
@@ -94,7 +92,6 @@ const htmlContent = `<!DOCTYPE html>
         textarea:focus { outline: 2px solid #89b4fa; border-color: transparent; }
         textarea[readonly] { color: #a6e3a1; }
 
-        /* === Buttons === */
         .toolbar { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
         button {
             padding: 8px 14px;
@@ -133,7 +130,6 @@ const htmlContent = `<!DOCTYPE html>
         }
         input[type="text"]:focus { outline: 2px solid #89b4fa; border-color: transparent; }
 
-        /* === Sub Tabs (Formatter) === */
         .sub-tabs { display: flex; gap: 2px; margin-bottom: 10px; }
         .sub-tab {
             padding: 6px 14px;
@@ -151,7 +147,6 @@ const htmlContent = `<!DOCTYPE html>
         .sub-content { display: none; flex: 1; }
         .sub-content.active { display: block; }
 
-        /* === Tree View === */
         .tree-view {
             background: #181825;
             border: 1px solid #45475a;
@@ -191,7 +186,6 @@ const htmlContent = `<!DOCTYPE html>
             line-height: 1.5;
         }
 
-        /* === Changes Log === */
         .changes-log {
             background: #181825;
             border: 1px solid #45475a;
@@ -212,7 +206,6 @@ const htmlContent = `<!DOCTYPE html>
         .new-key { color: #a6e3a1; }
         .field-id { color: #6c7086; font-size: 11px; margin-left: auto; }
 
-        /* === Status Toast === */
         .status {
             position: fixed; top: 20px; right: 20px;
             padding: 12px 20px; border-radius: 8px;
@@ -239,7 +232,6 @@ const htmlContent = `<!DOCTYPE html>
         .info-box code { background: #313244; padding: 1px 6px; border-radius: 3px; color: #f38ba8; font-family: 'Consolas', monospace; }
         .info-box strong { color: #89b4fa; }
 
-        /* === Mode Switch (Base64/URL) === */
         .mode-switch {
             display: inline-flex;
             background: #181825;
@@ -267,19 +259,17 @@ const htmlContent = `<!DOCTYPE html>
 </head>
 <body>
     <h1>🧰 JSON Toolbox</h1>
-    <p class="subtitle">Форматирование • Замена ключей • Base64 • URL — всё в одном месте</p>
+    <p class="subtitle">Форматирование • Замена ключей • Base64 • URL • ID Cleaner — всё в одном месте</p>
 
-    <!-- ====== MAIN TABS ====== -->
     <div class="main-tabs">
-        <div class="main-tab active" onclick="switchMainTab('formatter', event)">✨ JSON Formatter</div>
+        <div class="main-tab active" onclick="switchMainTab('formatter', event)">✨ Formatter</div>
         <div class="main-tab" onclick="switchMainTab('keyformatter', event)">🔑 Key Formatter</div>
         <div class="main-tab" onclick="switchMainTab('base64', event)">🔐 Base64</div>
-        <div class="main-tab" onclick="switchMainTab('url', event)">🌐 URL Encoder</div>
+        <div class="main-tab" onclick="switchMainTab('url', event)">🌐 URL</div>
+        <div class="main-tab" onclick="switchMainTab('idcleaner', event)">🧹 ID Cleaner</div>
     </div>
 
-    <!-- ============================================================ -->
     <!-- ====== TAB 1: JSON FORMATTER ====== -->
-    <!-- ============================================================ -->
     <div id="formatterPanel" class="tool-panel active">
         <div class="workspace">
             <div class="panel">
@@ -323,12 +313,10 @@ const htmlContent = `<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- ============================================================ -->
     <!-- ====== TAB 2: KEY FORMATTER ====== -->
-    <!-- ============================================================ -->
     <div id="keyformatterPanel" class="tool-panel">
         <div class="info-box">
-            <strong>📋 Правило:</strong> Рекурсивно обходит <strong>весь JSON</strong> на любом уровне вложенности. Находит все объекты, у которых есть <code>data.key</code> (строка), и заменяет в ней все <code>__</code> на <code>.</code>. Структура JSON полностью сохраняется.
+            <strong>📋 Правило:</strong> Рекурсивно обходит <strong>весь JSON</strong>. Находит все объекты с <code>data.key</code> (строка) и заменяет <code>__</code> на <code>.</code>. Структура сохраняется.
         </div>
         <div class="workspace">
             <div class="panel">
@@ -336,11 +324,10 @@ const htmlContent = `<!DOCTYPE html>
                     <span class="panel-title">📥 Исходный JSON</span>
                     <span class="stats" id="kInputStats">0 символов</span>
                 </div>
-                <textarea id="kInput" placeholder='Вставь сюда JSON с data.key на любом уровне...'></textarea>
+                <textarea id="kInput" placeholder='Вставь сюда JSON с data.key...'></textarea>
                 <div class="toolbar">
                     <button class="btn-primary" onclick="kProcess()">⚙️ Обработать</button>
                     <button class="btn-danger" onclick="kClear()">🗑️ Очистить</button>
-                    <button class="btn-secondary" onclick="kLoadExample()">📝 Пример</button>
                 </div>
             </div>
             <div class="panel">
@@ -348,7 +335,7 @@ const htmlContent = `<!DOCTYPE html>
                     <span class="panel-title">📤 Результат</span>
                     <span class="stats" id="kOutputStats">—</span>
                 </div>
-                <textarea id="kOutput" readonly placeholder='Здесь появится обработанный JSON...'></textarea>
+                <textarea id="kOutput" readonly placeholder='Обработанный JSON...'></textarea>
                 <div id="kChangesLog" class="changes-log"></div>
                 <div class="toolbar">
                     <input type="text" id="kFilename" value="processed" placeholder="Имя файла">
@@ -360,12 +347,10 @@ const htmlContent = `<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- ============================================================ -->
     <!-- ====== TAB 3: BASE64 ====== -->
-    <!-- ============================================================ -->
     <div id="base64Panel" class="tool-panel">
         <div class="info-box">
-            <strong>📋 Base64</strong> — стандарт кодирования бинарных данных в ASCII-строку. Поддерживает UTF-8 (работает с кириллицей и любыми символами).
+            <strong>📋 Base64</strong> — кодирование/декодирование. Полная поддержка UTF-8 (кириллица, эмодзи).
         </div>
         <div class="workspace">
             <div class="panel">
@@ -373,11 +358,11 @@ const htmlContent = `<!DOCTYPE html>
                     <span class="panel-title">📥 Исходный текст</span>
                     <span class="stats" id="bInputStats">0 символов</span>
                 </div>
-                <textarea id="bInput" placeholder='Вставь сюда текст для кодирования или Base64-строку для декодирования...'></textarea>
+                <textarea id="bInput" placeholder='Текст для кодирования или Base64 для декодирования...'></textarea>
                 <div class="toolbar">
                     <div class="mode-switch">
-                        <button class="mode-btn active" id="bModeEnc" onclick="bSetMode('enc', event)">🔒 Encode</button>
-                        <button class="mode-btn" id="bModeDec" onclick="bSetMode('dec', event)">🔓 Decode</button>
+                        <button class="mode-btn active" id="bModeEnc" onclick="bSetMode('enc')">🔒 Encode</button>
+                        <button class="mode-btn" id="bModeDec" onclick="bSetMode('dec')">🔓 Decode</button>
                     </div>
                     <button class="btn-primary" onclick="bProcess()">⚙️ Обработать</button>
                     <button class="btn-swap" onclick="bSwap()">🔄 Swap</button>
@@ -389,7 +374,7 @@ const htmlContent = `<!DOCTYPE html>
                     <span class="panel-title">📤 Результат</span>
                     <span class="stats" id="bOutputStats">—</span>
                 </div>
-                <textarea id="bOutput" readonly placeholder='Здесь появится результат...'></textarea>
+                <textarea id="bOutput" readonly placeholder='Результат...'></textarea>
                 <div class="toolbar">
                     <button class="btn-success" onclick="bCopy()">📋 Копировать</button>
                     <button class="btn-secondary" onclick="bDownload()">⬇️ Скачать</button>
@@ -398,12 +383,10 @@ const htmlContent = `<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- ============================================================ -->
     <!-- ====== TAB 4: URL ENCODER ====== -->
-    <!-- ============================================================ -->
     <div id="urlPanel" class="tool-panel">
         <div class="info-box">
-            <strong>📋 URL Encoder</strong> — преобразует строку в безопасный для URL формат (заменяет спецсимволы, пробелы, кириллицу на <code>%XX</code>). Использует стандарт <code>encodeURIComponent</code>.
+            <strong>📋 URL Encoder</strong> — кодирует/декодирует строку для безопасного использования в URL.
         </div>
         <div class="workspace">
             <div class="panel">
@@ -411,11 +394,11 @@ const htmlContent = `<!DOCTYPE html>
                     <span class="panel-title">📥 Исходный текст</span>
                     <span class="stats" id="uInputStats">0 символов</span>
                 </div>
-                <textarea id="uInput" placeholder='Вставь сюда URL или текст для кодирования... Например: https://example.com/path?name=Санёк&query=тест'></textarea>
+                <textarea id="uInput" placeholder='URL или текст...'></textarea>
                 <div class="toolbar">
                     <div class="mode-switch">
-                        <button class="mode-btn active" id="uModeEnc" onclick="uSetMode('enc', event)">🔒 Encode</button>
-                        <button class="mode-btn" id="uModeDec" onclick="uSetMode('dec', event)">🔓 Decode</button>
+                        <button class="mode-btn active" id="uModeEnc" onclick="uSetMode('enc')">🔒 Encode</button>
+                        <button class="mode-btn" id="uModeDec" onclick="uSetMode('dec')">🔓 Decode</button>
                     </div>
                     <button class="btn-primary" onclick="uProcess()">⚙️ Обработать</button>
                     <button class="btn-swap" onclick="uSwap()">🔄 Swap</button>
@@ -427,7 +410,7 @@ const htmlContent = `<!DOCTYPE html>
                     <span class="panel-title">📤 Результат</span>
                     <span class="stats" id="uOutputStats">—</span>
                 </div>
-                <textarea id="uOutput" readonly placeholder='Здесь появится результат...'></textarea>
+                <textarea id="uOutput" readonly placeholder='Результат...'></textarea>
                 <div class="toolbar">
                     <button class="btn-success" onclick="uCopy()">📋 Копировать</button>
                     <button class="btn-secondary" onclick="uDownload()">⬇️ Скачать</button>
@@ -436,34 +419,60 @@ const htmlContent = `<!DOCTYPE html>
         </div>
     </div>
 
+    <!-- ====== TAB 5: ID CLEANER ====== -->
+    <div id="idcleanerPanel" class="tool-panel">
+        <div class="info-box">
+            <strong>📋 Правило:</strong> Берёт массив <code>requests[]</code>, рекурсивно удаляет все <code>id</code> и <code>versionId</code>, оборачивает результат в <code>{ "testRequests": [...] }</code>.
+        </div>
+        <div class="workspace">
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">📥 Исходный JSON</span>
+                    <span class="stats" id="tcInputStats">0 символов</span>
+                </div>
+                <textarea id="tcInput" placeholder='Вставь сюда JSON с requests[]...'></textarea>
+                <div class="toolbar">
+                    <button class="btn-primary" onclick="tcProcess()">🧹 Обработать</button>
+                    <button class="btn-danger" onclick="tcClear()">🗑️ Очистить</button>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">📤 Результат (testRequests)</span>
+                    <span class="stats" id="tcOutputStats">—</span>
+                </div>
+                <textarea id="tcOutput" readonly placeholder='Здесь появится JSON с testRequests[]...'></textarea>
+                <div id="tcLog" class="changes-log"></div>
+                <div class="toolbar">
+                    <input type="text" id="tcFilename" value="test_requests" placeholder="Имя файла">
+                    <span style="color:#a6adc8;">.json</span>
+                    <button class="btn-success" onclick="tcDownload()">⬇️ Скачать</button>
+                    <button class="btn-secondary" onclick="tcCopy()">📋 Копировать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="status" class="status"></div>
 
     <script>
-    /* ================================================================
-       GLOBAL HELPERS
-       ================================================================ */
+    /* === GLOBAL === */
     function showStatus(msg, type) {
         const s = document.getElementById('status');
-        s.textContent = msg;
-        s.className = 'status show ' + type;
+        s.textContent = msg; s.className = 'status show ' + type;
         setTimeout(() => s.classList.remove('show'), 2500);
     }
     function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
     function dlText(text, name, mime) {
         let fn = name.trim() || 'data';
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([text], {type: mime || 'text/plain'}));
+        a.href = URL.createObjectURL(new Blob([text], {type: mime||'text/plain'}));
         a.download = fn; document.body.appendChild(a); a.click();
         document.body.removeChild(a);
         showStatus('⬇️ "' + fn + '" скачан!', 'success');
     }
-    function cp(text) {
-        navigator.clipboard.writeText(text).then(() => showStatus('📋 Скопировано!', 'success'));
-    }
+    function cp(text) { navigator.clipboard.writeText(text).then(() => showStatus('📋 Скопировано!','success')); }
 
-    /* ================================================================
-       MAIN TAB SWITCHING
-       ================================================================ */
     function switchMainTab(name, ev) {
         document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tool-panel').forEach(p => p.classList.remove('active'));
@@ -471,318 +480,227 @@ const htmlContent = `<!DOCTYPE html>
         document.getElementById(name + 'Panel').classList.add('active');
     }
 
-    /* ================================================================
-       TAB 1 — JSON FORMATTER
-       ================================================================ */
-    let fParsed = null, fStr = '';
-
-    document.getElementById('fInput').addEventListener('input', function() {
-        document.getElementById('fInputStats').textContent = this.value.length + ' символов';
-    });
-
-    function fFormat() {
-        const v = document.getElementById('fInput').value.trim();
-        if (!v) { showStatus('⚠️ Введи JSON!','error'); return; }
-        try {
-            fParsed = JSON.parse(v);
-            fStr = JSON.stringify(fParsed, null, 4);
-            document.getElementById('fRawView').textContent = fStr;
-            fRenderTree(fParsed);
-            document.getElementById('fOutputStats').textContent = fStr.length + ' символов • ' + fCount(fParsed) + ' элементов';
+    /* === TAB 1: JSON FORMATTER === */
+    let fParsed=null, fStr='';
+    document.getElementById('fInput').addEventListener('input', function(){ document.getElementById('fInputStats').textContent=this.value.length+' символов'; });
+    function fFormat(){
+        const v=document.getElementById('fInput').value.trim();
+        if(!v){showStatus('⚠️ Введи JSON!','error');return;}
+        try{ fParsed=JSON.parse(v); fStr=JSON.stringify(fParsed,null,4);
+            document.getElementById('fRawView').textContent=fStr; fRenderTree(fParsed);
+            document.getElementById('fOutputStats').textContent=fStr.length+' символов • '+fCount(fParsed)+' элементов';
             showStatus('✅ Отформатировано!','success');
-        } catch(e) { showStatus('❌ ' + e.message,'error'); }
+        }catch(e){showStatus('❌ '+e.message,'error');}
     }
-    function fMinify() {
-        const v = document.getElementById('fInput').value.trim();
-        if (!v) return;
-        try {
-            fParsed = JSON.parse(v);
-            fStr = JSON.stringify(fParsed);
-            document.getElementById('fRawView').textContent = fStr;
-            document.getElementById('fInput').value = fStr;
-            fRenderTree(fParsed);
-            document.getElementById('fOutputStats').textContent = fStr.length + ' символов';
+    function fMinify(){
+        const v=document.getElementById('fInput').value.trim(); if(!v)return;
+        try{ fParsed=JSON.parse(v); fStr=JSON.stringify(fParsed);
+            document.getElementById('fRawView').textContent=fStr;
+            document.getElementById('fInput').value=fStr; fRenderTree(fParsed);
+            document.getElementById('fOutputStats').textContent=fStr.length+' символов';
             showStatus('📦 Минифицировано!','success');
-        } catch(e) { showStatus('❌ ' + e.message,'error'); }
+        }catch(e){showStatus('❌ '+e.message,'error');}
     }
-    function fClear() {
-        document.getElementById('fInput').value = '';
-        document.getElementById('fRawView').innerHTML = '<span style="color:#6c7086;font-style:italic;">Нажми "Форматировать"</span>';
-        document.getElementById('fTreeView').innerHTML = '<span style="color:#6c7086;font-style:italic;">Нажми "Форматировать"</span>';
-        document.getElementById('fInputStats').textContent = '0 символов';
-        document.getElementById('fOutputStats').textContent = '—';
-        fParsed = null; fStr = '';
-        showStatus('🗑️ Очищено!','success');
+    function fClear(){
+        document.getElementById('fInput').value='';
+        document.getElementById('fRawView').innerHTML='<span style="color:#6c7086;font-style:italic;">Нажми "Форматировать"</span>';
+        document.getElementById('fTreeView').innerHTML='<span style="color:#6c7086;font-style:italic;">Нажми "Форматировать"</span>';
+        document.getElementById('fInputStats').textContent='0 символов';
+        document.getElementById('fOutputStats').textContent='—';
+        fParsed=null;fStr=''; showStatus('🗑️ Очищено!','success');
     }
-    function fSwitchSub(name, el) {
-        el.parentElement.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+    function fSwitchSub(name,el){
+        el.parentElement.querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('active'));
         el.classList.add('active');
-        document.getElementById('fTreeSub').classList.toggle('active', name==='tree');
-        document.getElementById('fRawSub').classList.toggle('active', name==='raw');
+        document.getElementById('fTreeSub').classList.toggle('active',name==='tree');
+        document.getElementById('fRawSub').classList.toggle('active',name==='raw');
     }
-    function fDownload() { if (!fStr) { showStatus('⚠️ Сначала отформатируй!','error'); return; } dlText(fStr, (document.getElementById('fFilename').value||'data')+'.json', 'application/json'); }
-    function fCopy() { if (!fStr) { showStatus('⚠️ Нечего копировать!','error'); return; } cp(fStr); }
-    function fCount(o) { let c=0; (function t(v){ if(Array.isArray(v)){c+=v.length;v.forEach(t);}else if(v&&typeof v==='object'){c+=Object.keys(v).length;Object.values(v).forEach(t);}})(o); return c; }
-    function fExpandAll() { document.querySelectorAll('#fTreeView .tree-children').forEach(e=>e.classList.remove('collapsed')); document.querySelectorAll('#fTreeView .tree-toggle').forEach(e=>e.textContent='▼'); document.querySelectorAll('#fTreeView .tree-summary').forEach(e=>e.style.display='none'); }
-    function fCollapseAll() { document.querySelectorAll('#fTreeView .tree-children').forEach(e=>e.classList.add('collapsed')); document.querySelectorAll('#fTreeView .tree-toggle').forEach(e=>e.textContent='▶'); document.querySelectorAll('#fTreeView .tree-summary').forEach(e=>e.style.display='inline'); }
-
-    function fRenderTree(data) {
-        const c = document.getElementById('fTreeView'); c.innerHTML = '';
-        c.appendChild(fBuildNode(null, data, true));
-    }
-    function fBuildNode(key, val, root) {
-        const n = document.createElement('div');
-        n.className = 'tree-node' + (root?' root':'');
-        if (val === null) { n.innerHTML = (key!==null?'<span class="tree-key">"'+esc(key)+'"</span>: ':'') + '<span class="tree-null">null</span>'; return n; }
-        const t = Array.isArray(val)?'array':typeof val;
-        if (t==='array'||t==='object') return fBuildCollapsible(n, key, val, t==='array'?'[':'{', t==='array'?']':'}', t==='array');
-        let d='', cls='';
-        if (t==='string') { d='"'+esc(val)+'"'; cls='tree-string'; }
-        else if (t==='number') { d=val; cls='tree-number'; }
-        else if (t==='boolean') { d=val; cls='tree-boolean'; }
-        n.innerHTML = (key!==null?'<span class="tree-key">"'+esc(key)+'"</span>: ':'') + '<span class="'+cls+'">'+d+'</span>';
+    function fDownload(){if(!fStr){showStatus('⚠️ Сначала отформатируй!','error');return;} dlText(fStr,(document.getElementById('fFilename').value||'data')+'.json','application/json');}
+    function fCopy(){if(!fStr){showStatus('⚠️ Нечего копировать!','error');return;} cp(fStr);}
+    function fCount(o){let c=0;(function t(v){if(Array.isArray(v)){c+=v.length;v.forEach(t);}else if(v&&typeof v==='object'){c+=Object.keys(v).length;Object.values(v).forEach(t);}})(o);return c;}
+    function fExpandAll(){document.querySelectorAll('#fTreeView .tree-children').forEach(e=>e.classList.remove('collapsed'));document.querySelectorAll('#fTreeView .tree-toggle').forEach(e=>e.textContent='▼');document.querySelectorAll('#fTreeView .tree-summary').forEach(e=>e.style.display='none');}
+    function fCollapseAll(){document.querySelectorAll('#fTreeView .tree-children').forEach(e=>e.classList.add('collapsed'));document.querySelectorAll('#fTreeView .tree-toggle').forEach(e=>e.textContent='▶');document.querySelectorAll('#fTreeView .tree-summary').forEach(e=>e.style.display='inline');}
+    function fRenderTree(data){const c=document.getElementById('fTreeView');c.innerHTML='';c.appendChild(fBuildNode(null,data,true));}
+    function fBuildNode(key,val,root){
+        const n=document.createElement('div'); n.className='tree-node'+(root?' root':'');
+        if(val===null){n.innerHTML=(key!==null?'<span class="tree-key">"'+esc(key)+'"</span>: ':'')+'<span class="tree-null">null</span>';return n;}
+        const t=Array.isArray(val)?'array':typeof val;
+        if(t==='array'||t==='object') return fBuildCollapsible(n,key,val,t==='array'?'[':'{',t==='array'?']':'}',t==='array');
+        let d='',cls='';
+        if(t==='string'){d='"'+esc(val)+'"';cls='tree-string';}
+        else if(t==='number'){d=val;cls='tree-number';}
+        else if(t==='boolean'){d=val;cls='tree-boolean';}
+        n.innerHTML=(key!==null?'<span class="tree-key">"'+esc(key)+'"</span>: ':'')+'<span class="'+cls+'">'+d+'</span>';
         return n;
     }
-    function fBuildCollapsible(node, key, val, ob, cb, isArr) {
-        const entries = isArr ? val : Object.entries(val);
-        const cnt = isArr ? val.length : Object.keys(val).length;
-        const hdr = document.createElement('span');
-        hdr.style.cursor='pointer'; hdr.style.userSelect='none';
-        const tog = document.createElement('span'); tog.className='tree-toggle'; tog.textContent='▼';
-        const sum = document.createElement('span'); sum.className='tree-summary'; sum.style.display='none';
+    function fBuildCollapsible(node,key,val,ob,cb,isArr){
+        const entries=isArr?val:Object.entries(val);
+        const cnt=isArr?val.length:Object.keys(val).length;
+        const hdr=document.createElement('span');hdr.style.cursor='pointer';hdr.style.userSelect='none';
+        const tog=document.createElement('span');tog.className='tree-toggle';tog.textContent='▼';
+        const sum=document.createElement('span');sum.className='tree-summary';sum.style.display='none';
         sum.textContent=' '+cnt+(isArr?' items':(cnt===1?' key':' keys'));
-        hdr.innerHTML = (key!==null?'<span class="tree-key">"'+esc(key)+'"</span>: ':'') + '<span class="tree-bracket">'+ob+'</span>';
-        hdr.insertBefore(tog, hdr.firstChild); hdr.appendChild(sum);
+        hdr.innerHTML=(key!==null?'<span class="tree-key">"'+esc(key)+'"</span>: ':'')+'<span class="tree-bracket">'+ob+'</span>';
+        hdr.insertBefore(tog,hdr.firstChild);hdr.appendChild(sum);
         node.appendChild(hdr);
-        const ch = document.createElement('div'); ch.className='tree-children';
-        if (isArr) val.forEach((v,i)=>ch.appendChild(fBuildNode(i,v)));
+        const ch=document.createElement('div');ch.className='tree-children';
+        if(isArr) val.forEach((v,i)=>ch.appendChild(fBuildNode(i,v)));
         else entries.forEach(([k,v])=>ch.appendChild(fBuildNode(k,v)));
-        const cl = document.createElement('div'); cl.innerHTML='<span class="tree-bracket">'+cb+'</span>'; cl.style.marginLeft='20px';
-        node.appendChild(ch); node.appendChild(cl);
-        hdr.addEventListener('click', e=>{ e.stopPropagation(); const c=ch.classList.toggle('collapsed'); tog.textContent=c?'▶':'▼'; sum.style.display=c?'inline':'none'; });
+        const cl=document.createElement('div');cl.innerHTML='<span class="tree-bracket">'+cb+'</span>';cl.style.marginLeft='20px';
+        node.appendChild(ch);node.appendChild(cl);
+        hdr.addEventListener('click',e=>{e.stopPropagation();const c=ch.classList.toggle('collapsed');tog.textContent=c?'▶':'▼';sum.style.display=c?'inline':'none';});
         return node;
     }
 
-    /* ================================================================
-       TAB 2 — KEY FORMATTER
-       ================================================================ */
-    let kStr = '';
-
-    document.getElementById('kInput').addEventListener('input', function() {
-        document.getElementById('kInputStats').textContent = this.value.length + ' символов';
-    });
-
-    function kProcess() {
-        const v = document.getElementById('kInput').value.trim();
-        if (!v) { showStatus('⚠️ Введи JSON!','error'); return; }
-        let data;
-        try { data = JSON.parse(v); } catch(e) { showStatus('❌ ' + e.message,'error'); return; }
-
-        const changes = [];
-        let count = 0;
-
-        function walk(obj) {
-            if (Array.isArray(obj)) {
-                obj.forEach(item => walk(item));
-            } else if (obj !== null && typeof obj === 'object') {
-                if (obj.data && typeof obj.data === 'object' && !Array.isArray(obj.data) && typeof obj.data.key === 'string') {
-                    const oldKey = obj.data.key;
-                    const newKey = oldKey.replace(/__/g, '.');
-                    if (oldKey !== newKey) {
-                        obj.data.key = newKey;
-                        changes.push({ id: obj.id || '—', old: oldKey, new: newKey });
-                        count++;
-                    }
+    /* === TAB 2: KEY FORMATTER === */
+    let kStr='';
+    document.getElementById('kInput').addEventListener('input',function(){document.getElementById('kInputStats').textContent=this.value.length+' символов';});
+    function kProcess(){
+        const v=document.getElementById('kInput').value.trim();
+        if(!v){showStatus('⚠️ Введи JSON!','error');return;}
+        let data; try{data=JSON.parse(v);}catch(e){showStatus('❌ '+e.message,'error');return;}
+        const changes=[]; let count=0;
+        function walk(obj){
+            if(Array.isArray(obj)){obj.forEach(item=>walk(item));}
+            else if(obj!==null&&typeof obj==='object'){
+                if(obj.data&&typeof obj.data==='object'&&!Array.isArray(obj.data)&&typeof obj.data.key==='string'){
+                    const old=obj.data.key, nw=old.replace(/__/g,'.');
+                    if(old!==nw){obj.data.key=nw;changes.push({id:obj.id||'—',old:old,new:nw});count++;}
                 }
-                Object.values(obj).forEach(val => walk(val));
+                Object.values(obj).forEach(val=>walk(val));
             }
         }
-
         walk(data);
-
-        kStr = JSON.stringify(data, null, 4);
-        document.getElementById('kOutput').value = kStr;
-        document.getElementById('kOutputStats').textContent = kStr.length + ' символов • изменено: ' + count;
-
-        const log = document.getElementById('kChangesLog');
-        if (changes.length === 0) { log.classList.remove('active'); }
-        else {
-            let html = '<div style="color:#89b4fa;font-weight:600;margin-bottom:6px;">📝 Изменения (' + changes.length + '):</div>';
-            changes.forEach(c => {
-                html += '<div class="change-item"><span class="old-key">'+esc(c.old)+'</span><span class="arrow">→</span><span class="new-key">'+esc(c.new)+'</span><span class="field-id">#'+c.id+'</span></div>';
-            });
-            log.innerHTML = html; log.classList.add('active');
+        kStr=JSON.stringify(data,null,4);
+        document.getElementById('kOutput').value=kStr;
+        document.getElementById('kOutputStats').textContent=kStr.length+' символов • изменено: '+count;
+        const log=document.getElementById('kChangesLog');
+        if(changes.length===0){log.classList.remove('active');}
+        else{
+            let html='<div style="color:#89b4fa;font-weight:600;margin-bottom:6px;">📝 Изменения ('+changes.length+'):</div>';
+            changes.forEach(c=>{html+='<div class="change-item"><span class="old-key">'+esc(c.old)+'</span><span class="arrow">→</span><span class="new-key">'+esc(c.new)+'</span><span class="field-id">#'+c.id+'</span></div>';});
+            log.innerHTML=html;log.classList.add('active');
         }
-
-        showStatus(count > 0 ? '✅ Обработано ключей: ' + count : 'ℹ️ Ключей с "__" не найдено', 'success');
+        showStatus(count>0?'✅ Обработано ключей: '+count:'ℹ️ Ключей с "__" не найдено','success');
     }
-
-    function kClear() {
-        document.getElementById('kInput').value = '';
-        document.getElementById('kOutput').value = '';
-        document.getElementById('kInputStats').textContent = '0 символов';
-        document.getElementById('kOutputStats').textContent = '—';
+    function kClear(){
+        document.getElementById('kInput').value='';document.getElementById('kOutput').value='';
+        document.getElementById('kInputStats').textContent='0 символов';
+        document.getElementById('kOutputStats').textContent='—';
         document.getElementById('kChangesLog').classList.remove('active');
-        kStr = '';
-        showStatus('🗑️ Очищено!','success');
+        kStr='';showStatus('🗑️ Очищено!','success');
     }
-    function kDownload() { if (!kStr) { showStatus('⚠️ Сначала обработай!','error'); return; } dlText(kStr, (document.getElementById('kFilename').value||'processed')+'.json', 'application/json'); }
-    function kCopy() { if (!kStr) { showStatus('⚠️ Нечего копировать!','error'); return; } cp(kStr); }
+    function kDownload(){if(!kStr){showStatus('⚠️ Сначала обработай!','error');return;} dlText(kStr,(document.getElementById('kFilename').value||'processed')+'.json','application/json');}
+    function kCopy(){if(!kStr){showStatus('⚠️ Нечего копировать!','error');return;} cp(kStr);}
 
-    function kLoadExample() {
-        const ex = {
-            "requests": [],
-            "response": {
-                "id": 39807, "versionId": 32134,
-                "data": { "format": 0, "pathToArray": null },
-                "fields": [
-                    { "id": 423973, "data": { "key": "event", "code": "event" } },
-                    { "id": 423976, "data": { "key": "data__company_id", "code": "data__company_id" } },
-                    { "id": 423991, "data": { "key": "data__changes__is_flagged__old", "code": "data__changes__is_flagged__old" } },
-                    { "id": 423993, "data": { "key": "data__changed_by__member_id", "code": "data__changed_by__member_id" } }
-                ],
-                "nested": {
-                    "deep": {
-                        "fields": [
-                            { "id": 999, "data": { "key": "deep__nested__value", "code": "deep__nested__value" } }
-                        ]
-                    }
-                }
-            }
-        };
-        document.getElementById('kInput').value = JSON.stringify(ex, null, 2);
-        document.getElementById('kInputStats').textContent = document.getElementById('kInput').value.length + ' символов';
-        showStatus('📝 Пример загружен','success');
-    }
-
-    /* ================================================================
-       TAB 3 — BASE64
-       ================================================================ */
-    let bMode = 'enc';
-
-    document.getElementById('bInput').addEventListener('input', function() {
-        document.getElementById('bInputStats').textContent = this.value.length + ' символов';
-    });
-
-    function bSetMode(mode, ev) {
-        bMode = mode;
-        document.getElementById('bModeEnc').classList.toggle('active', mode==='enc');
-        document.getElementById('bModeDec').classList.toggle('active', mode==='dec');
-    }
-
-    function bProcess() {
-        const input = document.getElementById('bInput').value;
-        if (!input) { showStatus('⚠️ Введи текст!','error'); return; }
-        try {
+    /* === TAB 3: BASE64 === */
+    let bMode='enc';
+    document.getElementById('bInput').addEventListener('input',function(){document.getElementById('bInputStats').textContent=this.value.length+' символов';});
+    function bSetMode(m){bMode=m;document.getElementById('bModeEnc').classList.toggle('active',m==='enc');document.getElementById('bModeDec').classList.toggle('active',m==='dec');}
+    function bProcess(){
+        const input=document.getElementById('bInput').value;
+        if(!input){showStatus('⚠️ Введи текст!','error');return;}
+        try{
             let result;
-            if (bMode === 'enc') {
-                // UTF-8 safe encode
-                const bytes = new TextEncoder().encode(input);
-                let binary = '';
-                bytes.forEach(b => binary += String.fromCharCode(b));
-                result = btoa(binary);
-            } else {
-                const binary = atob(input);
-                const bytes = new Uint8Array(binary.length);
-                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-                result = new TextDecoder().decode(bytes);
-            }
-            document.getElementById('bOutput').value = result;
-            document.getElementById('bOutputStats').textContent = result.length + ' символов';
-            showStatus('✅ Base64 ' + (bMode==='enc'?'закодирован':'декодирован') + '!','success');
-        } catch(e) {
-            showStatus('❌ Ошибка: ' + e.message,'error');
+            if(bMode==='enc'){const bytes=new TextEncoder().encode(input);let bin='';bytes.forEach(b=>bin+=String.fromCharCode(b));result=btoa(bin);}
+            else{const bin=atob(input);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);result=new TextDecoder().decode(bytes);}
+            document.getElementById('bOutput').value=result;
+            document.getElementById('bOutputStats').textContent=result.length+' символов';
+            showStatus('✅ Base64 '+(bMode==='enc'?'закодирован':'декодирован')+'!','success');
+        }catch(e){showStatus('❌ Ошибка: '+e.message,'error');}
+    }
+    function bSwap(){const a=document.getElementById('bInput'),b=document.getElementById('bOutput');const t=a.value;a.value=b.value;b.value=t;bSetMode(bMode==='enc'?'dec':'enc');showStatus('🔄 Swap!','success');}
+    function bClear(){document.getElementById('bInput').value='';document.getElementById('bOutput').value='';document.getElementById('bInputStats').textContent='0 символов';document.getElementById('bOutputStats').textContent='—';showStatus('🗑️ Очищено!','success');}
+    function bCopy(){const v=document.getElementById('bOutput').value;if(!v){showStatus('⚠️ Нечего копировать!','error');return;} cp(v);}
+    function bDownload(){const v=document.getElementById('bOutput').value;if(!v){showStatus('⚠️ Нечего сохранять!','error');return;} dlText(v,'base64_'+(bMode==='enc'?'encoded':'decoded')+'.txt','text/plain');}
+
+    /* === TAB 4: URL === */
+    let uMode='enc';
+    document.getElementById('uInput').addEventListener('input',function(){document.getElementById('uInputStats').textContent=this.value.length+' символов';});
+    function uSetMode(m){uMode=m;document.getElementById('uModeEnc').classList.toggle('active',m==='enc');document.getElementById('uModeDec').classList.toggle('active',m==='dec');}
+    function uProcess(){
+        const input=document.getElementById('uInput').value;
+        if(!input){showStatus('⚠️ Введи текст!','error');return;}
+        try{
+            let result = uMode==='enc' ? encodeURIComponent(input) : decodeURIComponent(input);
+            document.getElementById('uOutput').value=result;
+            document.getElementById('uOutputStats').textContent=result.length+' символов';
+            showStatus('✅ URL '+(uMode==='enc'?'закодирован':'декодирован')+'!','success');
+        }catch(e){showStatus('❌ Ошибка: '+e.message,'error');}
+    }
+    function uSwap(){const a=document.getElementById('uInput'),b=document.getElementById('uOutput');const t=a.value;a.value=b.value;b.value=t;uSetMode(uMode==='enc'?'dec':'enc');showStatus('🔄 Swap!','success');}
+    function uClear(){document.getElementById('uInput').value='';document.getElementById('uOutput').value='';document.getElementById('uInputStats').textContent='0 символов';document.getElementById('uOutputStats').textContent='—';showStatus('🗑️ Очищено!','success');}
+    function uCopy(){const v=document.getElementById('uOutput').value;if(!v){showStatus('⚠️ Нечего копировать!','error');return;} cp(v);}
+    function uDownload(){const v=document.getElementById('uOutput').value;if(!v){showStatus('⚠️ Нечего сохранять!','error');return;} dlText(v,'url_'+(uMode==='enc'?'encoded':'decoded')+'.txt','text/plain');}
+
+    /* === TAB 5: ID CLEANER === */
+    let tcStr='';
+    document.getElementById('tcInput').addEventListener('input',function(){document.getElementById('tcInputStats').textContent=this.value.length+' символов';});
+
+    function tcProcess(){
+        const v=document.getElementById('tcInput').value.trim();
+        if(!v){showStatus('⚠️ Введи JSON!','error');return;}
+        let data;
+        try{data=JSON.parse(v);}catch(e){showStatus('❌ Невалидный JSON: '+e.message,'error');return;}
+
+        // Определяем источник: requests[] или сразу массив
+        let requests;
+        if(Array.isArray(data)){
+            requests = data;
+        } else if(data.requests && Array.isArray(data.requests)){
+            requests = data.requests;
+        } else if(data.testRequests && Array.isArray(data.testRequests)){
+            requests = data.testRequests;
+        } else {
+            showStatus('❌ Не найден массив requests[] или testRequests[]','error');
+            return;
         }
+
+        let removedCount = 0;
+
+        // Рекурсивное удаление id и versionId
+        function removeIds(obj){
+            if(Array.isArray(obj)){
+                obj.forEach(item=>removeIds(item));
+            } else if(obj!==null && typeof obj==='object'){
+                if('id' in obj){ delete obj.id; removedCount++; }
+                if('versionId' in obj){ delete obj.versionId; removedCount++; }
+                Object.values(obj).forEach(val=>removeIds(val));
+            }
+        }
+
+        // Глубокая копия чтобы не мутировать оригинал
+        const cleanRequests = JSON.parse(JSON.stringify(requests));
+        removeIds(cleanRequests);
+
+        const result = { testRequests: cleanRequests };
+        tcStr = JSON.stringify(result, null, 4);
+        document.getElementById('tcOutput').value = tcStr;
+        document.getElementById('tcOutputStats').textContent = tcStr.length + ' символов • удалено полей: ' + removedCount;
+
+        // Лог
+        const log = document.getElementById('tcLog');
+        let html = '<div style="color:#89b4fa;font-weight:600;margin-bottom:6px;">🧹 Результат обработки:</div>';
+        html += '<div class="change-item"><span class="new-key">✅ requests[] → testRequests[]</span></div>';
+        html += '<div class="change-item"><span class="new-key">🗑️ Удалено полей id/versionId: ' + removedCount + '</span></div>';
+        html += '<div class="change-item"><span class="new-key">📦 Объектов в testRequests: ' + cleanRequests.length + '</span></div>';
+        log.innerHTML = html;
+        log.classList.add('active');
+
+        showStatus('✅ Готово! Удалено полей: ' + removedCount, 'success');
     }
 
-    function bSwap() {
-        const a = document.getElementById('bInput');
-        const b = document.getElementById('bOutput');
-        const tmp = a.value;
-        a.value = b.value;
-        b.value = tmp;
-        bSetMode(bMode === 'enc' ? 'dec' : 'enc');
-        showStatus('🔄 Swap выполнен!','success');
-    }
-
-    function bClear() {
-        document.getElementById('bInput').value = '';
-        document.getElementById('bOutput').value = '';
-        document.getElementById('bInputStats').textContent = '0 символов';
-        document.getElementById('bOutputStats').textContent = '—';
+    function tcClear(){
+        document.getElementById('tcInput').value='';
+        document.getElementById('tcOutput').value='';
+        document.getElementById('tcInputStats').textContent='0 символов';
+        document.getElementById('tcOutputStats').textContent='—';
+        document.getElementById('tcLog').classList.remove('active');
+        tcStr='';
         showStatus('🗑️ Очищено!','success');
     }
-    function bCopy() {
-        const v = document.getElementById('bOutput').value;
-        if (!v) { showStatus('⚠️ Нечего копировать!','error'); return; }
-        cp(v);
-    }
-    function bDownload() {
-        const v = document.getElementById('bOutput').value;
-        if (!v) { showStatus('⚠️ Нечего сохранять!','error'); return; }
-        dlText(v, 'base64_' + (bMode==='enc'?'encoded':'decoded') + '.txt', 'text/plain');
-    }
-
-    /* ================================================================
-       TAB 4 — URL ENCODER
-       ================================================================ */
-    let uMode = 'enc';
-
-    document.getElementById('uInput').addEventListener('input', function() {
-        document.getElementById('uInputStats').textContent = this.value.length + ' символов';
-    });
-
-    function uSetMode(mode, ev) {
-        uMode = mode;
-        document.getElementById('uModeEnc').classList.toggle('active', mode==='enc');
-        document.getElementById('uModeDec').classList.toggle('active', mode==='dec');
-    }
-
-    function uProcess() {
-        const input = document.getElementById('uInput').value;
-        if (!input) { showStatus('⚠️ Введи текст!','error'); return; }
-        try {
-            let result;
-            if (uMode === 'enc') {
-                result = encodeURIComponent(input);
-            } else {
-                result = decodeURIComponent(input);
-            }
-            document.getElementById('uOutput').value = result;
-            document.getElementById('uOutputStats').textContent = result.length + ' символов';
-            showStatus('✅ URL ' + (uMode==='enc'?'закодирован':'декодирован') + '!','success');
-        } catch(e) {
-            showStatus('❌ Ошибка: ' + e.message,'error');
-        }
-    }
-
-    function uSwap() {
-        const a = document.getElementById('uInput');
-        const b = document.getElementById('uOutput');
-        const tmp = a.value;
-        a.value = b.value;
-        b.value = tmp;
-        uSetMode(uMode === 'enc' ? 'dec' : 'enc');
-        showStatus('🔄 Swap выполнен!','success');
-    }
-
-    function uClear() {
-        document.getElementById('uInput').value = '';
-        document.getElementById('uOutput').value = '';
-        document.getElementById('uInputStats').textContent = '0 символов';
-        document.getElementById('uOutputStats').textContent = '—';
-        showStatus('🗑️ Очищено!','success');
-    }
-    function uCopy() {
-        const v = document.getElementById('uOutput').value;
-        if (!v) { showStatus('⚠️ Нечего копировать!','error'); return; }
-        cp(v);
-    }
-    function uDownload() {
-        const v = document.getElementById('uOutput').value;
-        if (!v) { showStatus('⚠️ Нечего сохранять!','error'); return; }
-        dlText(v, 'url_' + (uMode==='enc'?'encoded':'decoded') + '.txt', 'text/plain');
-    }
+    function tcDownload(){if(!tcStr){showStatus('⚠️ Сначала обработай!','error');return;} dlText(tcStr,(document.getElementById('tcFilename').value||'test_requests')+'.json','application/json');}
+    function tcCopy(){if(!tcStr){showStatus('⚠️ Нечего копировать!','error');return;} cp(tcStr);}
     </script>
 </body>
 </html>`
