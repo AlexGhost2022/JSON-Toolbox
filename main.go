@@ -32,13 +32,13 @@ const htmlContent = `<!DOCTYPE html>
             flex-wrap: wrap;
         }
         .main-tab {
-            padding: 12px 20px;
+            padding: 12px 18px;
             background: #313244;
             color: #a6adc8;
             border: 1px solid #45475a;
             border-radius: 10px 10px 0 0;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 700;
             transition: all 0.15s;
             border-bottom: none;
@@ -254,12 +254,28 @@ const htmlContent = `<!DOCTYPE html>
         .mode-btn.active { background: #89b4fa; color: #1e1e2e; }
         .mode-btn:hover:not(.active) { color: #cdd6f4; }
 
+        /* Cookie specific */
+        .cookie-result {
+            background: #181825;
+            border: 1px solid #45475a;
+            border-radius: 8px;
+            padding: 14px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            color: #a6e3a1;
+            word-break: break-all;
+            min-height: 100px;
+            max-height: 450px;
+            overflow: auto;
+            line-height: 1.5;
+        }
+
         @media (max-width: 1100px) { .workspace { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
     <h1>🧰 JSON Toolbox</h1>
-    <p class="subtitle">Форматирование • Замена ключей • Base64 • URL • ID Cleaner — всё в одном месте</p>
+    <p class="subtitle">6 инструментов в одном месте — всё локально, ничего не уходит в интернет</p>
 
     <div class="main-tabs">
         <div class="main-tab active" onclick="switchMainTab('formatter', event)">✨ Formatter</div>
@@ -267,6 +283,7 @@ const htmlContent = `<!DOCTYPE html>
         <div class="main-tab" onclick="switchMainTab('base64', event)">🔐 Base64</div>
         <div class="main-tab" onclick="switchMainTab('url', event)">🌐 URL</div>
         <div class="main-tab" onclick="switchMainTab('idcleaner', event)">🧹 ID Cleaner</div>
+        <div class="main-tab" onclick="switchMainTab('cookie', event)">🍪 Cookie</div>
     </div>
 
     <!-- ====== TAB 1: JSON FORMATTER ====== -->
@@ -448,6 +465,42 @@ const htmlContent = `<!DOCTYPE html>
                     <span style="color:#a6adc8;">.json</span>
                     <button class="btn-success" onclick="tcDownload()">⬇️ Скачать</button>
                     <button class="btn-secondary" onclick="tcCopy()">📋 Копировать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== TAB 6: COOKIE EXTRACTOR ====== -->
+    <div id="cookiePanel" class="tool-panel">
+        <div class="info-box">
+            <strong>📋 Cookie Extractor:</strong> Вставь строку cookie из браузера, укажи имя нужной куки — получишь значение. По умолчанию ищет <code>authToken_production</code>.
+        </div>
+        <div class="workspace">
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">📥 Строка Cookie</span>
+                    <span class="stats" id="ceInputStats">0 символов</span>
+                </div>
+                <textarea id="ceInput" placeholder='Вставь сюда строку cookie из браузера... Например: tmr_lvid=abc; authToken_production=eyJhbGc...'></textarea>
+                <div class="toolbar">
+                    <button class="btn-primary" onclick="ceExtract()">🍪 Извлечь</button>
+                    <button class="btn-danger" onclick="ceClear()">🗑️ Очистить</button>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">📤 Результат</span>
+                    <span class="stats" id="ceOutputStats">—</span>
+                </div>
+                <div class="toolbar" style="margin-top:0;margin-bottom:10px;">
+                    <label style="color:#a6adc8;font-weight:600;">Имя cookie:</label>
+                    <input type="text" id="ceCookieName" value="authToken_production" style="width:220px;">
+                </div>
+                <div class="cookie-result" id="ceOutput">
+                    <span style="color:#6c7086;font-style:italic;">Нажми "Извлечь", чтобы получить значение</span>
+                </div>
+                <div class="toolbar" style="margin-top:12px;">
+                    <button class="btn-success" onclick="ceCopy()">📋 Копировать</button>
                 </div>
             </div>
         </div>
@@ -636,71 +689,100 @@ const htmlContent = `<!DOCTYPE html>
     /* === TAB 5: ID CLEANER === */
     let tcStr='';
     document.getElementById('tcInput').addEventListener('input',function(){document.getElementById('tcInputStats').textContent=this.value.length+' символов';});
-
     function tcProcess(){
         const v=document.getElementById('tcInput').value.trim();
         if(!v){showStatus('⚠️ Введи JSON!','error');return;}
         let data;
         try{data=JSON.parse(v);}catch(e){showStatus('❌ Невалидный JSON: '+e.message,'error');return;}
-
-        // Определяем источник: requests[] или сразу массив
         let requests;
-        if(Array.isArray(data)){
-            requests = data;
-        } else if(data.requests && Array.isArray(data.requests)){
-            requests = data.requests;
-        } else if(data.testRequests && Array.isArray(data.testRequests)){
-            requests = data.testRequests;
-        } else {
-            showStatus('❌ Не найден массив requests[] или testRequests[]','error');
-            return;
-        }
-
-        let removedCount = 0;
-
-        // Рекурсивное удаление id и versionId
+        if(Array.isArray(data)){requests=data;}
+        else if(data.requests&&Array.isArray(data.requests)){requests=data.requests;}
+        else if(data.testRequests&&Array.isArray(data.testRequests)){requests=data.testRequests;}
+        else{showStatus('❌ Не найден массив requests[] или testRequests[]','error');return;}
+        let removedCount=0;
         function removeIds(obj){
-            if(Array.isArray(obj)){
-                obj.forEach(item=>removeIds(item));
-            } else if(obj!==null && typeof obj==='object'){
-                if('id' in obj){ delete obj.id; removedCount++; }
-                if('versionId' in obj){ delete obj.versionId; removedCount++; }
+            if(Array.isArray(obj)){obj.forEach(item=>removeIds(item));}
+            else if(obj!==null&&typeof obj==='object'){
+                if('id' in obj){delete obj.id;removedCount++;}
+                if('versionId' in obj){delete obj.versionId;removedCount++;}
                 Object.values(obj).forEach(val=>removeIds(val));
             }
         }
-
-        // Глубокая копия чтобы не мутировать оригинал
-        const cleanRequests = JSON.parse(JSON.stringify(requests));
+        const cleanRequests=JSON.parse(JSON.stringify(requests));
         removeIds(cleanRequests);
-
-        const result = { testRequests: cleanRequests };
-        tcStr = JSON.stringify(result, null, 4);
-        document.getElementById('tcOutput').value = tcStr;
-        document.getElementById('tcOutputStats').textContent = tcStr.length + ' символов • удалено полей: ' + removedCount;
-
-        // Лог
-        const log = document.getElementById('tcLog');
-        let html = '<div style="color:#89b4fa;font-weight:600;margin-bottom:6px;">🧹 Результат обработки:</div>';
-        html += '<div class="change-item"><span class="new-key">✅ requests[] → testRequests[]</span></div>';
-        html += '<div class="change-item"><span class="new-key">🗑️ Удалено полей id/versionId: ' + removedCount + '</span></div>';
-        html += '<div class="change-item"><span class="new-key">📦 Объектов в testRequests: ' + cleanRequests.length + '</span></div>';
-        log.innerHTML = html;
-        log.classList.add('active');
-
-        showStatus('✅ Готово! Удалено полей: ' + removedCount, 'success');
+        const result={testRequests:cleanRequests};
+        tcStr=JSON.stringify(result,null,4);
+        document.getElementById('tcOutput').value=tcStr;
+        document.getElementById('tcOutputStats').textContent=tcStr.length+' символов • удалено полей: '+removedCount;
+        const log=document.getElementById('tcLog');
+        let html='<div style="color:#89b4fa;font-weight:600;margin-bottom:6px;">🧹 Результат обработки:</div>';
+        html+='<div class="change-item"><span class="new-key">✅ requests[] → testRequests[]</span></div>';
+        html+='<div class="change-item"><span class="new-key">🗑️ Удалено полей id/versionId: '+removedCount+'</span></div>';
+        html+='<div class="change-item"><span class="new-key">📦 Объектов в testRequests: '+cleanRequests.length+'</span></div>';
+        log.innerHTML=html;log.classList.add('active');
+        showStatus('✅ Готово! Удалено полей: '+removedCount,'success');
     }
-
     function tcClear(){
-        document.getElementById('tcInput').value='';
-        document.getElementById('tcOutput').value='';
+        document.getElementById('tcInput').value='';document.getElementById('tcOutput').value='';
         document.getElementById('tcInputStats').textContent='0 символов';
         document.getElementById('tcOutputStats').textContent='—';
         document.getElementById('tcLog').classList.remove('active');
-        tcStr='';
-        showStatus('🗑️ Очищено!','success');
+        tcStr='';showStatus('🗑️ Очищено!','success');
     }
     function tcDownload(){if(!tcStr){showStatus('⚠️ Сначала обработай!','error');return;} dlText(tcStr,(document.getElementById('tcFilename').value||'test_requests')+'.json','application/json');}
     function tcCopy(){if(!tcStr){showStatus('⚠️ Нечего копировать!','error');return;} cp(tcStr);}
+
+    /* === TAB 6: COOKIE EXTRACTOR === */
+    let ceResult='';
+    document.getElementById('ceInput').addEventListener('input',function(){document.getElementById('ceInputStats').textContent=this.value.length+' символов';});
+
+    function ceExtract(){
+        const cookieString=document.getElementById('ceInput').value.trim();
+        const cookieName=document.getElementById('ceCookieName').value.trim();
+        const output=document.getElementById('ceOutput');
+
+        if(!cookieString){showStatus('⚠️ Вставь строку cookie!','error');return;}
+        if(!cookieName){showStatus('⚠️ Укажи имя cookie!','error');return;}
+
+        const pairs=cookieString.split(';');
+        let found='';
+
+        for(let i=0;i<pairs.length;i++){
+            let pair=pairs[i].trim();
+            if(pair.startsWith(cookieName+'=')){
+                found=pair.substring(cookieName.length+1);
+                break;
+            }
+        }
+
+        if(found){
+            ceResult=found;
+            output.textContent=found;
+            output.style.color='#a6e3a1';
+            document.getElementById('ceOutputStats').textContent=found.length+' символов';
+            showStatus('✅ Cookie "'+cookieName+'" найдена!','success');
+        }else{
+            ceResult='';
+            output.textContent='❌ Cookie "'+cookieName+'" не найдена в строке';
+            output.style.color='#f38ba8';
+            document.getElementById('ceOutputStats').textContent='—';
+            showStatus('❌ Cookie "'+cookieName+'" не найдена','error');
+        }
+    }
+
+    function ceClear(){
+        document.getElementById('ceInput').value='';
+        document.getElementById('ceOutput').innerHTML='<span style="color:#6c7086;font-style:italic;">Нажми "Извлечь", чтобы получить значение</span>';
+        document.getElementById('ceOutputStats').textContent='—';
+        document.getElementById('ceInputStats').textContent='0 символов';
+        ceResult='';
+        showStatus('🗑️ Очищено!','success');
+    }
+
+    function ceCopy(){
+        if(!ceResult){showStatus('⚠️ Нечего копировать!','error');return;}
+        cp(ceResult);
+    }
     </script>
 </body>
 </html>`
@@ -713,7 +795,7 @@ func main() {
 
 	port := "8080"
 	fmt.Println("==================================================")
-	fmt.Println("✅ JSON Toolbox запущен!")
+	fmt.Println("✅ JSON Toolbox запущен! (6 инструментов)")
 	fmt.Println("🌐 Открой браузер: http://localhost:" + port)
 	fmt.Println("💡 Ctrl+C — остановить")
 	fmt.Println("==================================================")
