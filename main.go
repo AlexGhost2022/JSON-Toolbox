@@ -32,7 +32,7 @@ const htmlContent = `<!DOCTYPE html>
             flex-wrap: wrap;
         }
         .main-tab {
-            padding: 12px 18px;
+            padding: 12px 16px;
             background: #313244;
             color: #a6adc8;
             border: 1px solid #45475a;
@@ -199,7 +199,7 @@ const htmlContent = `<!DOCTYPE html>
             display: none;
         }
         .changes-log.active { display: block; }
-        .change-item { padding: 3px 0; border-bottom: 1px solid #313244; display: flex; gap: 8px; align-items: center; }
+        .change-item { padding: 3px 0; border-bottom: 1px solid #313244; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .change-item:last-child { border-bottom: none; }
         .old-key { color: #f38ba8; text-decoration: line-through; }
         .arrow { color: #6c7086; }
@@ -254,7 +254,6 @@ const htmlContent = `<!DOCTYPE html>
         .mode-btn.active { background: #89b4fa; color: #1e1e2e; }
         .mode-btn:hover:not(.active) { color: #cdd6f4; }
 
-        /* Cookie specific */
         .cookie-result {
             background: #181825;
             border: 1px solid #45475a;
@@ -275,7 +274,7 @@ const htmlContent = `<!DOCTYPE html>
 </head>
 <body>
     <h1>🧰 JSON Toolbox</h1>
-    <p class="subtitle">6 инструментов в одном месте — всё локально, ничего не уходит в интернет</p>
+    <p class="subtitle">7 инструментов в одном месте — всё локально, ничего не уходит в интернет</p>
 
     <div class="main-tabs">
         <div class="main-tab active" onclick="switchMainTab('formatter', event)">✨ Formatter</div>
@@ -284,6 +283,7 @@ const htmlContent = `<!DOCTYPE html>
         <div class="main-tab" onclick="switchMainTab('url', event)">🌐 URL</div>
         <div class="main-tab" onclick="switchMainTab('idcleaner', event)">🧹 ID Cleaner</div>
         <div class="main-tab" onclick="switchMainTab('cookie', event)">🍪 Cookie</div>
+        <div class="main-tab" onclick="switchMainTab('prefixtrim', event)">✂️ Prefix Trim</div>
     </div>
 
     <!-- ====== TAB 1: JSON FORMATTER ====== -->
@@ -333,7 +333,7 @@ const htmlContent = `<!DOCTYPE html>
     <!-- ====== TAB 2: KEY FORMATTER ====== -->
     <div id="keyformatterPanel" class="tool-panel">
         <div class="info-box">
-            <strong>📋 Правило:</strong> Рекурсивно обходит <strong>весь JSON</strong>. Находит все объекты с <code>data.key</code> (строка) и заменяет <code>__</code> на <code>.</code>. Структура сохраняется.
+            <strong>📋 Правило:</strong> Рекурсивно обходит <strong>весь JSON</strong>. Находит все объекты с <code>data.key</code> и заменяет <code>__</code> на <code>.</code>. Структура сохраняется.
         </div>
         <div class="workspace">
             <div class="panel">
@@ -367,7 +367,7 @@ const htmlContent = `<!DOCTYPE html>
     <!-- ====== TAB 3: BASE64 ====== -->
     <div id="base64Panel" class="tool-panel">
         <div class="info-box">
-            <strong>📋 Base64</strong> — кодирование/декодирование. Полная поддержка UTF-8 (кириллица, эмодзи).
+            <strong>📋 Base64</strong> — кодирование/декодирование. Полная поддержка UTF-8.
         </div>
         <div class="workspace">
             <div class="panel">
@@ -458,7 +458,7 @@ const htmlContent = `<!DOCTYPE html>
                     <span class="panel-title">📤 Результат (testRequests)</span>
                     <span class="stats" id="tcOutputStats">—</span>
                 </div>
-                <textarea id="tcOutput" readonly placeholder='Здесь появится JSON с testRequests[]...'></textarea>
+                <textarea id="tcOutput" readonly placeholder='JSON с testRequests[]...'></textarea>
                 <div id="tcLog" class="changes-log"></div>
                 <div class="toolbar">
                     <input type="text" id="tcFilename" value="test_requests" placeholder="Имя файла">
@@ -473,7 +473,7 @@ const htmlContent = `<!DOCTYPE html>
     <!-- ====== TAB 6: COOKIE EXTRACTOR ====== -->
     <div id="cookiePanel" class="tool-panel">
         <div class="info-box">
-            <strong>📋 Cookie Extractor:</strong> Вставь строку cookie из браузера, укажи имя нужной куки — получишь значение. По умолчанию ищет <code>authToken_production</code>.
+            <strong>📋 Cookie Extractor:</strong> Вставь строку cookie, укажи имя — получишь значение. По умолчанию ищет <code>authToken_production</code>.
         </div>
         <div class="workspace">
             <div class="panel">
@@ -481,7 +481,7 @@ const htmlContent = `<!DOCTYPE html>
                     <span class="panel-title">📥 Строка Cookie</span>
                     <span class="stats" id="ceInputStats">0 символов</span>
                 </div>
-                <textarea id="ceInput" placeholder='Вставь сюда строку cookie из браузера... Например: tmr_lvid=abc; authToken_production=eyJhbGc...'></textarea>
+                <textarea id="ceInput" placeholder='Вставь сюда строку cookie из браузера...'></textarea>
                 <div class="toolbar">
                     <button class="btn-primary" onclick="ceExtract()">🍪 Извлечь</button>
                     <button class="btn-danger" onclick="ceClear()">🗑️ Очистить</button>
@@ -501,6 +501,41 @@ const htmlContent = `<!DOCTYPE html>
                 </div>
                 <div class="toolbar" style="margin-top:12px;">
                     <button class="btn-success" onclick="ceCopy()">📋 Копировать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== TAB 7: PREFIX TRIM ====== -->
+    <div id="prefixtrimPanel" class="tool-panel">
+        <div class="info-box">
+            <strong>📋 Правило:</strong> Рекурсивно обходит <strong>весь JSON</strong>. Находит все <code>data.key</code> содержащие <code>__</code> и удаляет префикс до первого <code>__</code>.<br>
+            Пример: <code>tasks__completed_at</code> → <code>completed_at</code> | <code>story_links__updated_at</code> → <code>updated_at</code>
+        </div>
+        <div class="workspace">
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">📥 Исходный JSON</span>
+                    <span class="stats" id="ptInputStats">0 символов</span>
+                </div>
+                <textarea id="ptInput" placeholder='Вставь сюда JSON с data.key содержащими префиксы...'></textarea>
+                <div class="toolbar">
+                    <button class="btn-primary" onclick="ptProcess()">✂️ Обрезать префиксы</button>
+                    <button class="btn-danger" onclick="ptClear()">🗑️ Очистить</button>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">📤 Результат</span>
+                    <span class="stats" id="ptOutputStats">—</span>
+                </div>
+                <textarea id="ptOutput" readonly placeholder='Обработанный JSON без префиксов...'></textarea>
+                <div id="ptChangesLog" class="changes-log"></div>
+                <div class="toolbar">
+                    <input type="text" id="ptFilename" value="trimmed" placeholder="Имя файла">
+                    <span style="color:#a6adc8;">.json</span>
+                    <button class="btn-success" onclick="ptDownload()">⬇️ Скачать</button>
+                    <button class="btn-secondary" onclick="ptCopy()">📋 Копировать</button>
                 </div>
             </div>
         </div>
@@ -634,7 +669,7 @@ const htmlContent = `<!DOCTYPE html>
             changes.forEach(c=>{html+='<div class="change-item"><span class="old-key">'+esc(c.old)+'</span><span class="arrow">→</span><span class="new-key">'+esc(c.new)+'</span><span class="field-id">#'+c.id+'</span></div>';});
             log.innerHTML=html;log.classList.add('active');
         }
-        showStatus(count>0?'✅ Обработано ключей: '+count:'ℹ️ Ключей с "__" не найдено','success');
+        showStatus(count>0?'✅ Обработано: '+count:'ℹ️ Не найдено','success');
     }
     function kClear(){
         document.getElementById('kInput').value='';document.getElementById('kOutput').value='';
@@ -713,14 +748,14 @@ const htmlContent = `<!DOCTYPE html>
         const result={testRequests:cleanRequests};
         tcStr=JSON.stringify(result,null,4);
         document.getElementById('tcOutput').value=tcStr;
-        document.getElementById('tcOutputStats').textContent=tcStr.length+' символов • удалено полей: '+removedCount;
+        document.getElementById('tcOutputStats').textContent=tcStr.length+' символов • удалено: '+removedCount;
         const log=document.getElementById('tcLog');
-        let html='<div style="color:#89b4fa;font-weight:600;margin-bottom:6px;">🧹 Результат обработки:</div>';
+        let html='<div style="color:#89b4fa;font-weight:600;margin-bottom:6px;">🧹 Результат:</div>';
         html+='<div class="change-item"><span class="new-key">✅ requests[] → testRequests[]</span></div>';
-        html+='<div class="change-item"><span class="new-key">🗑️ Удалено полей id/versionId: '+removedCount+'</span></div>';
-        html+='<div class="change-item"><span class="new-key">📦 Объектов в testRequests: '+cleanRequests.length+'</span></div>';
+        html+='<div class="change-item"><span class="new-key">🗑️ Удалено id/versionId: '+removedCount+'</span></div>';
+        html+='<div class="change-item"><span class="new-key">📦 Объектов: '+cleanRequests.length+'</span></div>';
         log.innerHTML=html;log.classList.add('active');
-        showStatus('✅ Готово! Удалено полей: '+removedCount,'success');
+        showStatus('✅ Готово! Удалено: '+removedCount,'success');
     }
     function tcClear(){
         document.getElementById('tcInput').value='';document.getElementById('tcOutput').value='';
@@ -735,18 +770,14 @@ const htmlContent = `<!DOCTYPE html>
     /* === TAB 6: COOKIE EXTRACTOR === */
     let ceResult='';
     document.getElementById('ceInput').addEventListener('input',function(){document.getElementById('ceInputStats').textContent=this.value.length+' символов';});
-
     function ceExtract(){
         const cookieString=document.getElementById('ceInput').value.trim();
         const cookieName=document.getElementById('ceCookieName').value.trim();
         const output=document.getElementById('ceOutput');
-
         if(!cookieString){showStatus('⚠️ Вставь строку cookie!','error');return;}
         if(!cookieName){showStatus('⚠️ Укажи имя cookie!','error');return;}
-
         const pairs=cookieString.split(';');
         let found='';
-
         for(let i=0;i<pairs.length;i++){
             let pair=pairs[i].trim();
             if(pair.startsWith(cookieName+'=')){
@@ -754,7 +785,6 @@ const htmlContent = `<!DOCTYPE html>
                 break;
             }
         }
-
         if(found){
             ceResult=found;
             output.textContent=found;
@@ -763,26 +793,89 @@ const htmlContent = `<!DOCTYPE html>
             showStatus('✅ Cookie "'+cookieName+'" найдена!','success');
         }else{
             ceResult='';
-            output.textContent='❌ Cookie "'+cookieName+'" не найдена в строке';
+            output.textContent='❌ Cookie "'+cookieName+'" не найдена';
             output.style.color='#f38ba8';
             document.getElementById('ceOutputStats').textContent='—';
             showStatus('❌ Cookie "'+cookieName+'" не найдена','error');
         }
     }
-
     function ceClear(){
         document.getElementById('ceInput').value='';
-        document.getElementById('ceOutput').innerHTML='<span style="color:#6c7086;font-style:italic;">Нажми "Извлечь", чтобы получить значение</span>';
+        document.getElementById('ceOutput').innerHTML='<span style="color:#6c7086;font-style:italic;">Нажми "Извлечь"</span>';
         document.getElementById('ceOutputStats').textContent='—';
         document.getElementById('ceInputStats').textContent='0 символов';
-        ceResult='';
-        showStatus('🗑️ Очищено!','success');
+        ceResult='';showStatus('🗑️ Очищено!','success');
+    }
+    function ceCopy(){if(!ceResult){showStatus('⚠️ Нечего копировать!','error');return;} cp(ceResult);}
+
+    /* === TAB 7: PREFIX TRIM === */
+    let ptStr='';
+    document.getElementById('ptInput').addEventListener('input',function(){document.getElementById('ptInputStats').textContent=this.value.length+' символов';});
+
+    function ptProcess(){
+        const v=document.getElementById('ptInput').value.trim();
+        if(!v){showStatus('⚠️ Введи JSON!','error');return;}
+        let data;
+        try{data=JSON.parse(v);}catch(e){showStatus('❌ Невалидный JSON: '+e.message,'error');return;}
+
+        const changes=[];
+        let count=0;
+
+        // Рекурсивный обход всего JSON
+        function walk(obj){
+            if(Array.isArray(obj)){
+                obj.forEach(item=>walk(item));
+            } else if(obj!==null && typeof obj==='object'){
+                // Проверяем: есть ли у объекта data.key (строка)?
+                if(obj.data && typeof obj.data==='object' && !Array.isArray(obj.data) && typeof obj.data.key==='string'){
+                    const oldKey = obj.data.key;
+                    // Если содержит __, удаляем префикс до первого __
+                    if(oldKey.includes('__')){
+                        const idx = oldKey.indexOf('__');
+                        const newKey = oldKey.substring(idx + 2); // +2 чтобы пропустить сами "__"
+                        obj.data.key = newKey;
+                        changes.push({id: obj.id || '—', old: oldKey, new: newKey});
+                        count++;
+                    }
+                }
+                // Продолжаем обход вглубь
+                Object.values(obj).forEach(val=>walk(val));
+            }
+        }
+
+        walk(data);
+
+        ptStr = JSON.stringify(data, null, 4);
+        document.getElementById('ptOutput').value = ptStr;
+        document.getElementById('ptOutputStats').textContent = ptStr.length + ' символов • обрезано: ' + count;
+
+        // Лог изменений
+        const log = document.getElementById('ptChangesLog');
+        if(changes.length === 0){
+            log.classList.remove('active');
+            showStatus('ℹ️ Ключей с "__" не найдено', 'success');
+        } else {
+            let html='<div style="color:#89b4fa;font-weight:600;margin-bottom:6px;">✂️ Обрезано префиксов ('+changes.length+'):</div>';
+            changes.forEach(c=>{
+                html+='<div class="change-item"><span class="old-key">'+esc(c.old)+'</span><span class="arrow">→</span><span class="new-key">'+esc(c.new)+'</span><span class="field-id">#'+c.id+'</span></div>';
+            });
+            log.innerHTML=html;
+            log.classList.add('active');
+            showStatus('✅ Обрезано префиксов: '+count, 'success');
+        }
     }
 
-    function ceCopy(){
-        if(!ceResult){showStatus('⚠️ Нечего копировать!','error');return;}
-        cp(ceResult);
+    function ptClear(){
+        document.getElementById('ptInput').value='';
+        document.getElementById('ptOutput').value='';
+        document.getElementById('ptInputStats').textContent='0 символов';
+        document.getElementById('ptOutputStats').textContent='—';
+        document.getElementById('ptChangesLog').classList.remove('active');
+        ptStr='';
+        showStatus('🗑️ Очищено!','success');
     }
+    function ptDownload(){if(!ptStr){showStatus('⚠️ Сначала обработай!','error');return;} dlText(ptStr,(document.getElementById('ptFilename').value||'trimmed')+'.json','application/json');}
+    function ptCopy(){if(!ptStr){showStatus('⚠️ Нечего копировать!','error');return;} cp(ptStr);}
     </script>
 </body>
 </html>`
@@ -795,7 +888,7 @@ func main() {
 
 	port := "8080"
 	fmt.Println("==================================================")
-	fmt.Println("✅ JSON Toolbox запущен! (6 инструментов)")
+	fmt.Println("✅ JSON Toolbox запущен! (7 инструментов)")
 	fmt.Println("🌐 Открой браузер: http://localhost:" + port)
 	fmt.Println("💡 Ctrl+C — остановить")
 	fmt.Println("==================================================")
