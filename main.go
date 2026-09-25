@@ -1,9 +1,14 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"strings"
+	"time"
 )
 
 const htmlContent = `<!DOCTYPE html>
@@ -75,10 +80,9 @@ const htmlContent = `<!DOCTYPE html>
         .panel-title { color: #89b4fa; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
         .stats { color: #6c7086; font-size: 12px; }
 
-        textarea {
-            flex: 1;
+        textarea, input.albato-input {
             width: 100%;
-            min-height: 450px;
+            min-height: 380px;
             background: #181825;
             color: #cdd6f4;
             border: 1px solid #45475a;
@@ -89,7 +93,8 @@ const htmlContent = `<!DOCTYPE html>
             resize: none;
             line-height: 1.5;
         }
-        textarea:focus { outline: 2px solid #89b4fa; border-color: transparent; }
+        textarea { flex: 1; }
+        textarea:focus, input.albato-input:focus { outline: 2px solid #89b4fa; border-color: transparent; }
         textarea[readonly] { color: #a6e3a1; }
 
         .toolbar { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
@@ -118,8 +123,11 @@ const htmlContent = `<!DOCTYPE html>
         .btn-secondary:hover { background: #585b70; }
         .btn-swap { background: #cba6f7; color: #1e1e2e; }
         .btn-swap:hover { background: #b4befe; }
+        .btn-send { background: #f9e2af; color: #1e1e2e; font-weight: 700; }
+        .btn-send:hover { background: #fab387; }
+        .btn-send:disabled { background: #585b70; color: #6c7086; cursor: not-allowed; }
 
-        input[type="text"] {
+        input[type="text"], input[type="password"] {
             padding: 8px 12px;
             background: #181825;
             color: #cdd6f4;
@@ -128,7 +136,7 @@ const htmlContent = `<!DOCTYPE html>
             font-size: 13px;
             width: 140px;
         }
-        input[type="text"]:focus { outline: 2px solid #89b4fa; border-color: transparent; }
+        input[type="text"]:focus, input[type="password"]:focus { outline: 2px solid #89b4fa; border-color: transparent; }
 
         .sub-tabs { display: flex; gap: 2px; margin-bottom: 10px; }
         .sub-tab {
@@ -269,31 +277,77 @@ const htmlContent = `<!DOCTYPE html>
             line-height: 1.5;
         }
 
+        /* === ALBATO TAB === */
+        .albato-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+        .albato-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .albato-label { color: #a6adc8; font-weight: 600; font-size: 13px; min-width: 60px; }
+        .albato-input { flex: 1; min-height: auto !important; padding: 10px 12px !important; min-width: 200px; }
+        .url-preview {
+            background: #11111b;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            color: #f9e2af;
+            word-break: break-all;
+            border: 1px solid #313244;
+        }
+        .url-preview .base { color: #6c7086; }
+        .url-preview .path { color: #f9e2af; }
+
+        .response-box {
+            background: #181825;
+            border: 1px solid #45475a;
+            border-radius: 8px;
+            padding: 14px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            min-height: 200px;
+            max-height: 500px;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .response-success { color: #a6e3a1; }
+        .response-error { color: #f38ba8; }
+        .response-loading { color: #f9e2af; font-style: italic; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 700;
+            font-family: 'Consolas', monospace;
+        }
+        .status-2xx { background: #a6e3a1; color: #1e1e2e; }
+        .status-4xx { background: #f38ba8; color: #1e1e2e; }
+        .status-5xx { background: #fab387; color: #1e1e2e; }
+        .status-0 { background: #45475a; color: #cdd6f4; }
+
         @media (max-width: 1100px) { .workspace { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
     <h1>🧰 JSON Toolbox</h1>
-    <p class="subtitle">7 инструментов в одном месте — всё локально, ничего не уходит в интернет</p>
+    <p class="subtitle">8 инструментов в одном месте — всё локально</p>
 
     <div class="main-tabs">
         <div class="main-tab active" onclick="switchMainTab('formatter', event)">✨ Formatter</div>
-        <div class="main-tab" onclick="switchMainTab('keyformatter', event)">🔑 Key Formatter</div>
+        <div class="main-tab" onclick="switchMainTab('keyformatter', event)">🔑 Keys</div>
         <div class="main-tab" onclick="switchMainTab('base64', event)">🔐 Base64</div>
         <div class="main-tab" onclick="switchMainTab('url', event)">🌐 URL</div>
         <div class="main-tab" onclick="switchMainTab('idcleaner', event)">🧹 ID Cleaner</div>
         <div class="main-tab" onclick="switchMainTab('cookie', event)">🍪 Cookie</div>
-        <div class="main-tab" onclick="switchMainTab('prefixtrim', event)">✂️ Prefix Trim</div>
+        <div class="main-tab" onclick="switchMainTab('prefixtrim', event)">✂️ Trim</div>
+        <div class="main-tab" onclick="switchMainTab('albato', event)">🚀 Albato</div>
     </div>
 
-    <!-- ====== TAB 1: JSON FORMATTER ====== -->
+    <!-- ====== TAB 1-7: без изменений (тот же код что и раньше) ====== -->
     <div id="formatterPanel" class="tool-panel active">
         <div class="workspace">
             <div class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">📥 Исходный JSON</span>
-                    <span class="stats" id="fInputStats">0 символов</span>
-                </div>
+                <div class="panel-header"><span class="panel-title">📥 Исходный JSON</span><span class="stats" id="fInputStats">0 символов</span></div>
                 <textarea id="fInput" placeholder='Вставь сюда JSON...'></textarea>
                 <div class="toolbar">
                     <button class="btn-primary" onclick="fFormat()">✨ Форматировать</button>
@@ -302,10 +356,7 @@ const htmlContent = `<!DOCTYPE html>
                 </div>
             </div>
             <div class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">📤 Результат</span>
-                    <span class="stats" id="fOutputStats">—</span>
-                </div>
+                <div class="panel-header"><span class="panel-title">📤 Результат</span><span class="stats" id="fOutputStats">—</span></div>
                 <div class="sub-tabs">
                     <div class="sub-tab active" onclick="fSwitchSub('tree',this)">🌳 Tree View</div>
                     <div class="sub-tab" onclick="fSwitchSub('raw',this)">📄 Raw JSON</div>
@@ -330,17 +381,11 @@ const htmlContent = `<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- ====== TAB 2: KEY FORMATTER ====== -->
     <div id="keyformatterPanel" class="tool-panel">
-        <div class="info-box">
-            <strong>📋 Правило:</strong> Рекурсивно обходит <strong>весь JSON</strong>. Находит все объекты с <code>data.key</code> и заменяет <code>__</code> на <code>.</code>. Структура сохраняется.
-        </div>
+        <div class="info-box"><strong>📋 Правило:</strong> Рекурсивно обходит весь JSON. Находит все объекты с <code>data.key</code> и заменяет <code>__</code> на <code>.</code>.</div>
         <div class="workspace">
             <div class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">📥 Исходный JSON</span>
-                    <span class="stats" id="kInputStats">0 символов</span>
-                </div>
+                <div class="panel-header"><span class="panel-title">📥 Исходный JSON</span><span class="stats" id="kInputStats">0 символов</span></div>
                 <textarea id="kInput" placeholder='Вставь сюда JSON с data.key...'></textarea>
                 <div class="toolbar">
                     <button class="btn-primary" onclick="kProcess()">⚙️ Обработать</button>
@@ -348,10 +393,7 @@ const htmlContent = `<!DOCTYPE html>
                 </div>
             </div>
             <div class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">📤 Результат</span>
-                    <span class="stats" id="kOutputStats">—</span>
-                </div>
+                <div class="panel-header"><span class="panel-title">📤 Результат</span><span class="stats" id="kOutputStats">—</span></div>
                 <textarea id="kOutput" readonly placeholder='Обработанный JSON...'></textarea>
                 <div id="kChangesLog" class="changes-log"></div>
                 <div class="toolbar">
@@ -364,17 +406,11 @@ const htmlContent = `<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- ====== TAB 3: BASE64 ====== -->
     <div id="base64Panel" class="tool-panel">
-        <div class="info-box">
-            <strong>📋 Base64</strong> — кодирование/декодирование. Полная поддержка UTF-8.
-        </div>
+        <div class="info-box"><strong>📋 Base64</strong> — кодирование/декодирование. Полная поддержка UTF-8.</div>
         <div class="workspace">
             <div class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">📥 Исходный текст</span>
-                    <span class="stats" id="bInputStats">0 символов</span>
-                </div>
+                <div class="panel-header"><span class="panel-title">📥 Исходный текст</span><span class="stats" id="bInputStats">0 символов</span></div>
                 <textarea id="bInput" placeholder='Текст для кодирования или Base64 для декодирования...'></textarea>
                 <div class="toolbar">
                     <div class="mode-switch">
@@ -387,10 +423,7 @@ const htmlContent = `<!DOCTYPE html>
                 </div>
             </div>
             <div class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">📤 Результат</span>
-                    <span class="stats" id="bOutputStats">—</span>
-                </div>
+                <div class="panel-header"><span class="panel-title">📤 Результат</span><span class="stats" id="bOutputStats">—</span></div>
                 <textarea id="bOutput" readonly placeholder='Результат...'></textarea>
                 <div class="toolbar">
                     <button class="btn-success" onclick="bCopy()">📋 Копировать</button>
@@ -400,17 +433,11 @@ const htmlContent = `<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- ====== TAB 4: URL ENCODER ====== -->
     <div id="urlPanel" class="tool-panel">
-        <div class="info-box">
-            <strong>📋 URL Encoder</strong> — кодирует/декодирует строку для безопасного использования в URL.
-        </div>
+        <div class="info-box"><strong>📋 URL Encoder</strong> — кодирует/декодирует строку для безопасного использования в URL.</div>
         <div class="workspace">
             <div class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">📥 Исходный текст</span>
-                    <span class="stats" id="uInputStats">0 символов</span>
-                </div>
+                <div class="panel-header"><span class="panel-title">📥 Исходный текст</span><span class="stats" id="uInputStats">0 символов</span></div>
                 <textarea id="uInput" placeholder='URL или текст...'></textarea>
                 <div class="toolbar">
                     <div class="mode-switch">
@@ -423,10 +450,7 @@ const htmlContent = `<!DOCTYPE html>
                 </div>
             </div>
             <div class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">📤 Результат</span>
-                    <span class="stats" id="uOutputStats">—</span>
-                </div>
+                <div class="panel-header"><span class="panel-title">📤 Результат</span><span class="stats" id="uOutputStats">—</span></div>
                 <textarea id="uOutput" readonly placeholder='Результат...'></textarea>
                 <div class="toolbar">
                     <button class="btn-success" onclick="uCopy()">📋 Копировать</button>
@@ -436,17 +460,11 @@ const htmlContent = `<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- ====== TAB 5: ID CLEANER ====== -->
     <div id="idcleanerPanel" class="tool-panel">
-        <div class="info-box">
-            <strong>📋 Правило:</strong> Берёт массив <code>requests[]</code>, рекурсивно удаляет все <code>id</code> и <code>versionId</code>, оборачивает результат в <code>{ "testRequests": [...] }</code>.
-        </div>
+        <div class="info-box"><strong>📋 Правило:</strong> Берёт массив <code>requests[]</code>, рекурсивно удаляет все <code>id</code> и <code>versionId</code>, оборачивает в <code>{ "testRequests": [...] }</code>.</div>
         <div class="workspace">
             <div class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">📥 Исходный JSON</span>
-                    <span class="stats" id="tcInputStats">0 символов</span>
-                </div>
+                <div class="panel-header"><span class="panel-title">📥 Исходный JSON</span><span class="stats" id="tcInputStats">0 символов</span></div>
                 <textarea id="tcInput" placeholder='Вставь сюда JSON с requests[]...'></textarea>
                 <div class="toolbar">
                     <button class="btn-primary" onclick="tcProcess()">🧹 Обработать</button>
@@ -454,10 +472,7 @@ const htmlContent = `<!DOCTYPE html>
                 </div>
             </div>
             <div class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">📤 Результат (testRequests)</span>
-                    <span class="stats" id="tcOutputStats">—</span>
-                </div>
+                <div class="panel-header"><span class="panel-title">📤 Результат (testRequests)</span><span class="stats" id="tcOutputStats">—</span></div>
                 <textarea id="tcOutput" readonly placeholder='JSON с testRequests[]...'></textarea>
                 <div id="tcLog" class="changes-log"></div>
                 <div class="toolbar">
@@ -470,17 +485,11 @@ const htmlContent = `<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- ====== TAB 6: COOKIE EXTRACTOR ====== -->
     <div id="cookiePanel" class="tool-panel">
-        <div class="info-box">
-            <strong>📋 Cookie Extractor:</strong> Вставь строку cookie, укажи имя — получишь значение. По умолчанию ищет <code>authToken_production</code>.
-        </div>
+        <div class="info-box"><strong>📋 Cookie Extractor:</strong> Вставь строку cookie, укажи имя — получишь значение. По умолчанию <code>authToken_production</code>.</div>
         <div class="workspace">
             <div class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">📥 Строка Cookie</span>
-                    <span class="stats" id="ceInputStats">0 символов</span>
-                </div>
+                <div class="panel-header"><span class="panel-title">📥 Строка Cookie</span><span class="stats" id="ceInputStats">0 символов</span></div>
                 <textarea id="ceInput" placeholder='Вставь сюда строку cookie из браузера...'></textarea>
                 <div class="toolbar">
                     <button class="btn-primary" onclick="ceExtract()">🍪 Извлечь</button>
@@ -488,17 +497,12 @@ const htmlContent = `<!DOCTYPE html>
                 </div>
             </div>
             <div class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">📤 Результат</span>
-                    <span class="stats" id="ceOutputStats">—</span>
-                </div>
+                <div class="panel-header"><span class="panel-title">📤 Результат</span><span class="stats" id="ceOutputStats">—</span></div>
                 <div class="toolbar" style="margin-top:0;margin-bottom:10px;">
                     <label style="color:#a6adc8;font-weight:600;">Имя cookie:</label>
                     <input type="text" id="ceCookieName" value="authToken_production" style="width:220px;">
                 </div>
-                <div class="cookie-result" id="ceOutput">
-                    <span style="color:#6c7086;font-style:italic;">Нажми "Извлечь", чтобы получить значение</span>
-                </div>
+                <div class="cookie-result" id="ceOutput"><span style="color:#6c7086;font-style:italic;">Нажми "Извлечь"</span></div>
                 <div class="toolbar" style="margin-top:12px;">
                     <button class="btn-success" onclick="ceCopy()">📋 Копировать</button>
                 </div>
@@ -506,18 +510,11 @@ const htmlContent = `<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- ====== TAB 7: PREFIX TRIM ====== -->
     <div id="prefixtrimPanel" class="tool-panel">
-        <div class="info-box">
-            <strong>📋 Правило:</strong> Рекурсивно обходит <strong>весь JSON</strong>. Находит все <code>data.key</code> содержащие <code>__</code> и удаляет префикс до первого <code>__</code>.<br>
-            Пример: <code>tasks__completed_at</code> → <code>completed_at</code> | <code>story_links__updated_at</code> → <code>updated_at</code>
-        </div>
+        <div class="info-box"><strong>📋 Правило:</strong> Находит все <code>data.key</code> содержащие <code>__</code> и удаляет префикс до первого <code>__</code>.<br><code>tasks__completed_at</code> → <code>completed_at</code></div>
         <div class="workspace">
             <div class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">📥 Исходный JSON</span>
-                    <span class="stats" id="ptInputStats">0 символов</span>
-                </div>
+                <div class="panel-header"><span class="panel-title">📥 Исходный JSON</span><span class="stats" id="ptInputStats">0 символов</span></div>
                 <textarea id="ptInput" placeholder='Вставь сюда JSON с data.key содержащими префиксы...'></textarea>
                 <div class="toolbar">
                     <button class="btn-primary" onclick="ptProcess()">✂️ Обрезать префиксы</button>
@@ -525,10 +522,7 @@ const htmlContent = `<!DOCTYPE html>
                 </div>
             </div>
             <div class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">📤 Результат</span>
-                    <span class="stats" id="ptOutputStats">—</span>
-                </div>
+                <div class="panel-header"><span class="panel-title">📤 Результат</span><span class="stats" id="ptOutputStats">—</span></div>
                 <textarea id="ptOutput" readonly placeholder='Обработанный JSON без префиксов...'></textarea>
                 <div id="ptChangesLog" class="changes-log"></div>
                 <div class="toolbar">
@@ -536,6 +530,52 @@ const htmlContent = `<!DOCTYPE html>
                     <span style="color:#a6adc8;">.json</span>
                     <button class="btn-success" onclick="ptDownload()">⬇️ Скачать</button>
                     <button class="btn-secondary" onclick="ptCopy()">📋 Копировать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== TAB 8: ALBATO PUT ====== -->
+    <div id="albatoPanel" class="tool-panel">
+        <div class="info-box">
+            <strong>📋 Albato API PUT:</strong> Отправляет JSON методом <code>PUT</code> на <code>https://api.albato.ru/builder/apps/{path}</code> с <code>Bearer</code> токеном. Возвращает значение поля <code>success</code> из ответа.
+        </div>
+        <div class="workspace">
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">📥 Параметры запроса</span>
+                    <span class="stats" id="albInputStats">0 символов JSON</span>
+                </div>
+                <div class="albato-form">
+                    <div class="albato-row">
+                        <span class="albato-label">Path:</span>
+                        <input type="text" id="albPath" class="albato-input" placeholder="34482/versions/32128/actions/10057238" value="" oninput="updateUrlPreview()">
+                    </div>
+                    <div class="albato-row">
+                        <span class="albato-label">Token:</span>
+                        <input type="password" id="albToken" class="albato-input" placeholder="Вставь Bearer токен...">
+                        <button class="btn-secondary" onclick="toggleTokenVisibility()" id="albTokenToggle">👁️</button>
+                    </div>
+                    <div class="url-preview" id="urlPreview">
+                        <span class="base">https://api.albato.ru/builder/apps/</span><span class="path" id="urlPathPreview"></span>
+                    </div>
+                </div>
+                <textarea id="albInput" placeholder='Вставь сюда сырой JSON для отправки...' oninput="document.getElementById('albInputStats').textContent=this.value.length+' символов JSON'"></textarea>
+                <div class="toolbar">
+                    <button class="btn-send" id="albSendBtn" onclick="albSend()">🚀 Отправить PUT</button>
+                    <button class="btn-danger" onclick="albClear()">🗑️ Очистить</button>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">📤 Ответ API</span>
+                    <span class="stats" id="albStatus">—</span>
+                </div>
+                <div class="response-box response-loading" id="albResponse">
+                    Нажми "🚀 Отправить PUT", чтобы выполнить запрос
+                </div>
+                <div class="toolbar" style="margin-top:12px;">
+                    <button class="btn-success" onclick="albCopy()">📋 Копировать ответ</button>
                 </div>
             </div>
         </div>
@@ -811,45 +851,33 @@ const htmlContent = `<!DOCTYPE html>
     /* === TAB 7: PREFIX TRIM === */
     let ptStr='';
     document.getElementById('ptInput').addEventListener('input',function(){document.getElementById('ptInputStats').textContent=this.value.length+' символов';});
-
     function ptProcess(){
         const v=document.getElementById('ptInput').value.trim();
         if(!v){showStatus('⚠️ Введи JSON!','error');return;}
         let data;
         try{data=JSON.parse(v);}catch(e){showStatus('❌ Невалидный JSON: '+e.message,'error');return;}
-
         const changes=[];
         let count=0;
-
-        // Рекурсивный обход всего JSON
         function walk(obj){
-            if(Array.isArray(obj)){
-                obj.forEach(item=>walk(item));
-            } else if(obj!==null && typeof obj==='object'){
-                // Проверяем: есть ли у объекта data.key (строка)?
+            if(Array.isArray(obj)){obj.forEach(item=>walk(item));}
+            else if(obj!==null && typeof obj==='object'){
                 if(obj.data && typeof obj.data==='object' && !Array.isArray(obj.data) && typeof obj.data.key==='string'){
                     const oldKey = obj.data.key;
-                    // Если содержит __, удаляем префикс до первого __
                     if(oldKey.includes('__')){
                         const idx = oldKey.indexOf('__');
-                        const newKey = oldKey.substring(idx + 2); // +2 чтобы пропустить сами "__"
+                        const newKey = oldKey.substring(idx + 2);
                         obj.data.key = newKey;
                         changes.push({id: obj.id || '—', old: oldKey, new: newKey});
                         count++;
                     }
                 }
-                // Продолжаем обход вглубь
                 Object.values(obj).forEach(val=>walk(val));
             }
         }
-
         walk(data);
-
         ptStr = JSON.stringify(data, null, 4);
         document.getElementById('ptOutput').value = ptStr;
         document.getElementById('ptOutputStats').textContent = ptStr.length + ' символов • обрезано: ' + count;
-
-        // Лог изменений
         const log = document.getElementById('ptChangesLog');
         if(changes.length === 0){
             log.classList.remove('active');
@@ -864,7 +892,6 @@ const htmlContent = `<!DOCTYPE html>
             showStatus('✅ Обрезано префиксов: '+count, 'success');
         }
     }
-
     function ptClear(){
         document.getElementById('ptInput').value='';
         document.getElementById('ptOutput').value='';
@@ -876,19 +903,235 @@ const htmlContent = `<!DOCTYPE html>
     }
     function ptDownload(){if(!ptStr){showStatus('⚠️ Сначала обработай!','error');return;} dlText(ptStr,(document.getElementById('ptFilename').value||'trimmed')+'.json','application/json');}
     function ptCopy(){if(!ptStr){showStatus('⚠️ Нечего копировать!','error');return;} cp(ptStr);}
+
+    /* === TAB 8: ALBATO PUT === */
+    let albLastResponse = '';
+
+    function updateUrlPreview() {
+        const path = document.getElementById('albPath').value.trim();
+        document.getElementById('urlPathPreview').textContent = path;
+    }
+    updateUrlPreview();
+
+    function toggleTokenVisibility() {
+        const tokenInput = document.getElementById('albToken');
+        const btn = document.getElementById('albTokenToggle');
+        if (tokenInput.type === 'password') {
+            tokenInput.type = 'text';
+            btn.textContent = '🙈';
+        } else {
+            tokenInput.type = 'password';
+            btn.textContent = '👁️';
+        }
+    }
+
+    async function albSend() {
+        const path = document.getElementById('albPath').value.trim();
+        const token = document.getElementById('albToken').value.trim();
+        const body = document.getElementById('albInput').value;
+        const responseBox = document.getElementById('albResponse');
+        const sendBtn = document.getElementById('albSendBtn');
+
+        if (!path) { showStatus('⚠️ Укажи path!', 'error'); return; }
+        if (!token) { showStatus('⚠️ Укажи токен!', 'error'); return; }
+        if (!body) { showStatus('⚠️ Вставь JSON!', 'error'); return; }
+
+        // Проверяем что это валидный JSON
+        try { JSON.parse(body); }
+        catch(e) { showStatus('❌ Невалидный JSON: ' + e.message, 'error'); return; }
+
+        // Блокируем кнопку на время запроса
+        sendBtn.disabled = true;
+        sendBtn.textContent = '⏳ Отправка...';
+        responseBox.className = 'response-box response-loading';
+        responseBox.textContent = '⏳ Отправляем запрос на api.albato.ru...';
+        document.getElementById('albStatus').textContent = 'Ожидание ответа...';
+
+        try {
+            const res = await fetch('/api/proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: path, token: token, body: body })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || data.error) {
+                responseBox.className = 'response-box response-error';
+                responseBox.textContent = '❌ Ошибка: ' + (data.error || 'Неизвестная ошибка');
+                document.getElementById('albStatus').innerHTML = '<span class="status-badge status-0">ERROR</span>';
+                albLastResponse = data.error || 'Ошибка';
+                showStatus('❌ Ошибка запроса', 'error');
+                return;
+            }
+
+            // Успех
+            const statusCode = data.status_code || 0;
+            const successValue = data.success;
+            const rawResponse = data.raw_response || '';
+
+            let statusClass = 'status-0';
+            if (statusCode >= 200 && statusCode < 300) statusClass = 'status-2xx';
+            else if (statusCode >= 400 && statusCode < 500) statusClass = 'status-4xx';
+            else if (statusCode >= 500) statusClass = 'status-5xx';
+
+            document.getElementById('albStatus').innerHTML = '<span class="status-badge ' + statusClass + '">HTTP ' + statusCode + '</span>';
+
+            let displayText = '✅ success: ' + JSON.stringify(successValue);
+            if (rawResponse && rawResponse !== String(successValue)) {
+                displayText += '\n\n📄 Полный ответ:\n' + rawResponse;
+            }
+            responseBox.className = 'response-box response-success';
+            responseBox.textContent = displayText;
+            albLastResponse = String(successValue);
+
+            showStatus('✅ Ответ получен! success=' + JSON.stringify(successValue), 'success');
+
+        } catch (e) {
+            responseBox.className = 'response-box response-error';
+            responseBox.textContent = '❌ Сетевая ошибка: ' + e.message + '\n\nУбедись, что Go-сервер запущен.';
+            document.getElementById('albStatus').innerHTML = '<span class="status-badge status-0">NETWORK ERROR</span>';
+            albLastResponse = e.message;
+            showStatus('❌ Сетевая ошибка', 'error');
+        } finally {
+            sendBtn.disabled = false;
+            sendBtn.textContent = '🚀 Отправить PUT';
+        }
+    }
+
+    function albClear() {
+        document.getElementById('albPath').value = '';
+        document.getElementById('albToken').value = '';
+        document.getElementById('albInput').value = '';
+        document.getElementById('albInputStats').textContent = '0 символов JSON';
+        document.getElementById('albResponse').className = 'response-box response-loading';
+        document.getElementById('albResponse').textContent = 'Нажми "🚀 Отправить PUT", чтобы выполнить запрос';
+        document.getElementById('albStatus').textContent = '—';
+        updateUrlPreview();
+        albLastResponse = '';
+        showStatus('🗑️ Очищено!', 'success');
+    }
+
+    function albCopy() {
+        if (!albLastResponse) { showStatus('⚠️ Нечего копировать!', 'error'); return; }
+        cp(albLastResponse);
+    }
     </script>
 </body>
 </html>`
+
+// === HTTP-прокси для Albato API ===
+type ProxyRequest struct {
+	Path  string `json:"path"`
+	Token string `json:"token"`
+	Body  string `json:"body"`
+}
+
+type ProxyResponse struct {
+	Success     interface{} `json:"success"`
+	StatusCode  int         `json:"status_code"`
+	RawResponse string      `json:"raw_response"`
+	Error       string      `json:"error,omitempty"`
+}
+
+func albatoProxyHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req ProxyRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(ProxyResponse{Error: "Невалидный запрос: " + err.Error()})
+		return
+	}
+
+	if req.Path == "" {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(ProxyResponse{Error: "Path не указан"})
+		return
+	}
+	if req.Token == "" {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(ProxyResponse{Error: "Token не указан"})
+		return
+	}
+	if req.Body == "" {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(ProxyResponse{Error: "JSON body пуст"})
+		return
+	}
+
+	// Формируем URL
+	path := strings.TrimPrefix(req.Path, "/")
+	url := "https://api.albato.ru/builder/apps/" + path
+
+	// Создаём HTTP-клиент с таймаутом
+	client := &http.Client{Timeout: 30 * time.Second}
+
+	// Создаём PUT-запрос
+	httpReq, err := http.NewRequest(http.MethodPut, url, bytes.NewBufferString(req.Body))
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(ProxyResponse{Error: "Не удалось создать запрос: " + err.Error()})
+		return
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+req.Token)
+	httpReq.Header.Set("Accept", "application/json")
+
+	// Выполняем запрос
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(ProxyResponse{Error: "Ошибка HTTP: " + err.Error()})
+		return
+	}
+	defer resp.Body.Close()
+
+	// Читаем ответ
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(ProxyResponse{
+			StatusCode: resp.StatusCode,
+			Error:      "Не удалось прочитать ответ: " + err.Error(),
+		})
+		return
+	}
+
+	rawResponse := string(bodyBytes)
+
+	// Пытаемся распарсить JSON и достать поле "success"
+	var parsed map[string]interface{}
+	var successValue interface{} = rawResponse // по умолчанию - весь ответ как строка
+
+	if err := json.Unmarshal(bodyBytes, &parsed); err == nil {
+		if sv, ok := parsed["success"]; ok {
+			successValue = sv
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(ProxyResponse{
+		Success:     successValue,
+		StatusCode:  resp.StatusCode,
+		RawResponse: rawResponse,
+	})
+}
 
 func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Write([]byte(htmlContent))
 	})
+	http.HandleFunc("/api/proxy", albatoProxyHandler)
 
 	port := "8080"
 	fmt.Println("==================================================")
-	fmt.Println("✅ JSON Toolbox запущен! (7 инструментов)")
+	fmt.Println("✅ JSON Toolbox запущен! (8 инструментов)")
 	fmt.Println("🌐 Открой браузер: http://localhost:" + port)
 	fmt.Println("💡 Ctrl+C — остановить")
 	fmt.Println("==================================================")
